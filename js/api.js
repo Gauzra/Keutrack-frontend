@@ -3,7 +3,7 @@
  * Utility functions untuk komunikasi dengan backend
  */
 
-const API_BASE_URL = 'http://localhost:2001/api'; 
+const API_BASE_URL = 'https://keutrack-backend-production.up.railway.app/api';
 
 class KeuTrackAPI {
   
