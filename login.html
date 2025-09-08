@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KeuTrack - Login</title>
+    <link rel="icon" type="image/svg+xml" href="./Images/logo.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google OAuth -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        // Suppress Tailwind CSS production warning
+        if (typeof window !== 'undefined' && window.console && window.console.warn) {
+            const originalWarn = console.warn;
+            console.warn = function (...args) {
+                if (args[0] && args[0].includes && args[0].includes('should not be used in production')) {
+                    return; // Suppress Tailwind production warning
+                }
+                originalWarn.apply(console, args);
+            };
+        }
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Source Sans Pro', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        secondary: '#64748b',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* CSS dengan container transparan */
+        body {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                url('./Images/loginpage 1.jpeg') center/cover no-repeat fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: relative;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        /* Efek latar belakang */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+            transform: rotate(30deg);
+            z-index: 0;
+        }
+
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 380px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .input-field {
+            transition: all 0.3s;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .input-field:focus {
+            border-color: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+
+        .btn-login {
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            font-size: 0.9rem;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .divider::before {
+            margin-right: 0.5rem;
+        }
+
+        .divider::after {
+            margin-left: 0.5rem;
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.6rem 1.2rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 500;
+            transition: all 0.3s;
+            cursor: pointer;
+            color: white;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            font-size: 0.9rem;
+        }
+
+        .google-btn:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Teks dengan warna putih dan transparansi */
+        .text-white-trans {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .text-white-trans-light {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Checkbox styling */
+        input[type="checkbox"] {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 1.2rem;
+                max-width: 320px;
+            }
+
+            .login-card h2 {
+                font-size: 1.4rem;
+            }
+
+            .input-field {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+            }
+
+            .btn-login,
+            .google-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .bg-upload-label {
+                bottom: 10px;
+                right: 10px;
+                font-size: 10px;
+                padding: 6px 8px;
+            }
+        }
+
+        /* Style untuk tombol upload background */
+        .bg-upload-label {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .bg-upload-label:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Copyright Footer -->
+    <div class="absolute bottom-4 left-0 right-0 text-center">
+        <p class="text-xs text-white-trans-light">
+            &copy; 2025 KeuTrack. All rights reserved.
+        </p>
+    </div>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="login-card">
+        <!-- Logo dan Judul -->
+        <div class="text-center mb-6">
+            <img src="./Images/logo.svg" alt="KeuTrack Logo" class="mx-auto w-20 h-20 mb-3 filter brightness-0 invert">
+            <h2 class="text-xl font-bold text-white-trans">Selamat Datang</h2>
+            <p class="mt-1 text-sm text-white-trans-light">Masuk ke akun KeuTrack Anda</p>
+        </div>
+
+        <!-- Form Login -->
+        <form id="loginForm" class="space-y-4">
+            <div class="space-y-3">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-white-trans mb-1">Email</label>
+                    <input id="email" name="email" type="email" required class="input-field w-full"
+                        placeholder="Email Anda">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-white-trans mb-1">Password</label>
+                    <input id="password" name="password" type="password" required class="input-field w-full"
+                        placeholder="Password">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+                    <label for="remember-me" class="ml-2 block text-white-trans">Ingat saya</label>
+                </div>
+
+                <div>
+                    <a href="#" class="font-medium text-white-trans hover:text-white">Lupa password?</a>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login w-full flex justify-center items-center relative">
+                <span class="material-icons absolute left-3 text-sm">login</span>
+                Masuk
+            </button>
+
+            <div class="divider">Atau masuk dengan</div>
+
+            <!-- Google Sign-In Button -->
+            <div id="g_id_onload"
+                data-client_id="109474537566-johb2fn97km03he16s3cump2k0lf63ht.apps.googleusercontent.com"
+                data-callback="handleCredentialResponse">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with"
+                data-shape="rectangular" data-logo_alignment="left" data-width="100%">
+            </div>
+        </form>
+
+        <p class="mt-4 text-center text-sm text-white-trans-light">
+            Belum punya akun?
+            <a href="#" class="font-medium text-white-trans hover:text-white">Daftar sekarang</a>
+        </p>
+    </div>
+
+    <script>
+        // Fungsi untuk menangani response dari Google Sign-In
+        async function handleCredentialResponse(response) {
+            try {
+                // Tampilkan loading
+                document.getElementById('loadingOverlay').classList.add('active');
+
+                // Decode JWT token
+                const responsePayload = jwt_decode(response.credential);
+
+                console.log("ID: " + responsePayload.sub);
+                console.log('Full Name: ' + responsePayload.name);
+                console.log('Given Name: ' + responsePayload.given_name);
+                console.log('Family Name: ' + responsePayload.family_name);
+                console.log("Image URL: " + responsePayload.picture);
+                console.log("Email: " + responsePayload.email);
+
+                // Simpan data user ke localStorage untuk session management
+                const userData = {
+                    id: responsePayload.sub,
+                    name: responsePayload.name,
+                    email: responsePayload.email,
+                    picture: responsePayload.picture,
+                    loginMethod: 'google'
+                };
+
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                // Redirect ke dashboard
+                window.location.href = 'dashboard.html';
+            } catch (error) {
+                console.error('Error handling Google sign-in:', error);
+                alert('Terjadi kesalahan saat login dengan Google');
+            } finally {
+                // Sembunyikan loading
+                document.getElementById('loadingOverlay').classList.remove('active');
+            }
+        }
+
+        // Fungsi untuk menangani form login manual
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                alert('Mohon isi email dan password');
+                return;
+            }
+
+            try {
+                // Tampilkan loading
+                document.getElementById('loadingOverlay').classList.add('active');
+
+                // Gunakan API untuk login
+                const response = await KeuTrackAPI.login(email, password);
+
+                if (response.success) {
+                    // Simpan data user ke localStorage untuk session management
+                    const userData = {
+                        id: response.user.id,
+                        name: response.user.username,
+                        email: response.user.email,
+                        loginMethod: 'manual'
+                    };
+
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                    // Redirect ke dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    alert('Login gagal: ' + (response.error || 'Username atau password salah'));
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Terjadi kesalahan saat login: ' + error.message);
+            } finally {
+                // Sembunyikan loading
+                document.getElementById('loadingOverlay').classList.remove('active');
+            }
+        });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+    <script src="js/api.js"></script>
+</body>
+
+</html>

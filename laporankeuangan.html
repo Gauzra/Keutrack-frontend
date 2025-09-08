@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>KeuTrack - Laporan Keuangan</title>
+	<link rel="icon" type="image/svg+xml" href="./Images/LOGO KT.svg">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap"
+		rel="stylesheet">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<!-- Export Libraries -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+	<script src="js/api.js?v=7"></script>
+	<script src="js/accountClassification.js?v=7"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					fontFamily: { sans: ['Source Sans Pro', 'sans-serif'] },
+					colors: { primary: '#2c3e50', success: '#10B981', danger: '#EF4444' }
+				}
+			}
+		}
+	</script>
+	<style>
+		/* Styles tetap sama */
+		.toast {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 9999;
+			max-width: 350px;
+			padding: 16px 20px;
+			border-radius: 8px;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, .15);
+			transform: translateX(400px);
+			transition: transform .3s ease-in-out;
+			font-family: 'Source Sans Pro', sans-serif;
+		}
+
+		.toast.show {
+			transform: translateX(0);
+		}
+
+		.toast.success {
+			background: #10B981;
+			color: #fff;
+			border-left: 4px solid #059669;
+		}
+
+		.toast.error {
+			background: #EF4444;
+			color: #fff;
+			border-left: 4px solid #DC2626;
+		}
+
+		.toast.info {
+			background: #3B82F6;
+			color: #fff;
+			border-left: 4px solid #2563EB;
+		}
+
+		.toast.warning {
+			background: #F59E0B;
+			color: #fff;
+			border-left: 4px solid #D97706;
+		}
+
+		.toast-content {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		.toast-message {
+			flex: 1;
+			font-size: 14px;
+			font-weight: 500;
+			line-height: 1.4;
+		}
+
+		.toast-close {
+			background: none;
+			border: none;
+			color: inherit;
+			cursor: pointer;
+			padding: 4px;
+			border-radius: 4px;
+			opacity: .7;
+			transition: opacity .2s;
+		}
+
+		.toast-close:hover {
+			opacity: 1;
+		}
+
+		@media print {
+			.no-print {
+				display: none !important;
+			}
+
+			body {
+				background: #fff !important;
+			}
+
+			.table-print th,
+			.table-print td {
+				border: 1px solid #e5e7eb !important;
+			}
+		}
+
+		/* Mobile Menu Styles */
+		@media (max-width: 768px) {
+			.mobile-menu {
+				transform: translateX(-100%);
+				transition: transform .3s ease-in-out;
+				width: 80% !important;
+				max-width: 300px;
+				top: 0;
+				height: 100vh;
+				overflow: auto;
+				z-index: 60;
+			}
+
+			.mobile-menu.active {
+				transform: translateX(0);
+				box-shadow: 4px 0 15px rgba(0, 0, 0, .1);
+			}
+
+			.mobile-menu>nav {
+				padding-top: 4rem;
+			}
+
+			.mobile-overlay {
+				display: none;
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: rgba(0, 0, 0, 0.5);
+				z-index: 30;
+				opacity: 0;
+				transition: opacity .3s ease-in-out;
+			}
+
+			.mobile-overlay.active {
+				display: block;
+			}
+		}
+	</style>
+</head>
+
+<body class="bg-gray-50 font-sans">
+	<!-- Toast Container -->
+	<div id="toastContainer"></div>
+
+	<!-- Mobile Header -->
+	<div class="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white p-4 z-50 no-print">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center space-x-1">
+				<button id="mobileMenuButton" class="text-white">
+					<span class="material-icons">menu</span>
+				</button>
+				<img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-10 h-10">
+				<span class="text-xl font-semibold pt-1.5">KeuTrack</span>
+			</div>
+			<button onclick="window.print()"
+				class="px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+				<span class="material-icons align-middle mr-1">print</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- Overlay untuk mobile menu -->
+	<div id="mobileOverlay" class="mobile-overlay"></div>
+
+	<!-- Sidebar -->
+	<div class="fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50] text-white mobile-menu lg:translate-x-0 z-40">
+		<div class="p-6 hidden lg:block">
+			<div class="flex items-center space-x-1">
+				<img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-[70px] h-[70px]">
+				<span class="text-2xl font-semibold pt-2.5">KeuTrack</span>
+			</div>
+		</div>
+		<nav class="mt-15 lg:mt-6">
+			<ul class="space-y-2 px-4">
+				<li><a href="dashboard.html"
+						class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"><span
+							class="material-icons">analytics</span><span>Dashboard</span></a></li>
+				<li><a href="akun.html"
+						class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"><span
+							class="material-icons">account_balance</span><span>Pengelolaan Akun</span></a></li>
+				<li><a href="transaksi.html"
+						class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"><span
+							class="material-icons">swap_horiz</span><span>Transaksi</span></a></li>
+				<li><a href="siklus_akuntansi.html"
+						class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"><span
+							class="material-icons">account_tree</span><span>Siklus Akuntansi</span></a></li>
+				<li><a href="laporankeuangan.html"
+						class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/20"><span
+							class="material-icons">summarize</span><span>Laporan Keuangan</span></a></li>
+				<li><a href="profil.html"
+						class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"><span
+							class="material-icons">person</span><span>Profil</span></a></li>
+			</ul>
+		</nav>
+		<div class="absolute bottom-0 w-full p-4">
+			<button id="logoutButton"
+				class="flex items-center space-x-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+				<span class="material-icons">logout</span>
+				<span>Log Out</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- Main Content -->
+	<div class="lg:ml-64 p-4 lg:p-8 mt-16 lg:mt-0">
+		<!-- Header -->
+		<div class="bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white rounded-lg p-6 mb-8">
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-2xl font-semibold">Laporan Keuangan</h1>
+					<p class="text-white/80 mt-1">Laba Rugi dan Neraca</p>
+					<div class="text-white/60 text-sm mt-2">
+						<span id="dataInfo">Memuat data...</span>
+					</div>
+				</div>
+				<div class="flex items-center gap-2">
+					<button onclick="window.print()"
+						class="no-print px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+						<span class="material-icons align-middle mr-1">print</span> Cetak
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Laporan Laba Rugi -->
+		<div class="bg-white rounded-lg shadow-sm p-6">
+			<div class="flex items-center justify-between mb-4">
+				<div>
+					<h2 class="text-lg font-semibold text-gray-800">Laporan Laba Rugi</h2>
+					<p class="text-sm text-gray-600 mt-1">Ringkasan pendapatan dan beban untuk periode tertentu</p>
+				</div>
+				<div class="no-print flex gap-2">
+					<button onclick="exportIncomeExcel()"
+						class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+						<span class="material-icons text-sm align-middle mr-1">grid_on</span> Excel
+					</button>
+					<button onclick="exportIncomePDF()"
+						class="px-4 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+						<span class="material-icons text-sm align-middle mr-1">picture_as_pdf</span> PDF
+					</button>
+				</div>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="min-w-full table-print" id="incomeTable">
+					<thead class="bg-gray-50">
+						<tr>
+							<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KODE</th>
+							<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">PENDAPATAN /
+								BEBAN</th>
+							<th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">JUMLAH</th>
+						</tr>
+					</thead>
+					<tbody id="incomeTableBody" class="divide-y divide-gray-200">
+						<!-- Baris laba rugi akan diisi JS -->
+					</tbody>
+					<tfoot class="bg-gray-50">
+						<tr>
+							<td colspan="2" class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Laba/Rugi
+								Bersih</td>
+							<td id="netIncomeCell" class="px-4 py-3 text-right text-sm font-semibold"></td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+		</div>
+
+		<!-- Neraca (Balance Sheet) -->
+		<div class="bg-white rounded-lg shadow-sm p-6 mt-8">
+			<div class="flex items-center justify-between mb-4">
+				<div>
+					<h2 class="text-lg font-semibold text-gray-800">Neraca</h2>
+					<p class="text-sm text-gray-600 mt-1">Posisi keuangan pada tanggal tertentu</p>
+				</div>
+				<div class="no-print flex gap-2">
+					<button onclick="exportBalanceExcel()"
+						class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+						<span class="material-icons text-sm align-middle mr-1">grid_on</span> Excel
+					</button>
+					<button onclick="exportBalancePDF()"
+						class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+						<span class="material-icons text-sm align-middle mr-1">picture_as_pdf</span> PDF
+					</button>
+				</div>
+			</div>
+			<div class="overflow-x-auto">
+				<table id="balanceTable" class="min-w-full table-print">
+					<thead class="bg-gray-50">
+						<tr>
+							<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KODE</th>
+							<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NAMA AKUN</th>
+							<th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+							<th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+						</tr>
+					</thead>
+					<tbody id="balanceTableBody" class="divide-y divide-gray-200">
+						<!-- Baris neraca akan diisi JS -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Toast Notification System
+		function showToast(message, type = 'info') {
+			const toastContainer = document.getElementById('toastContainer');
+			const toast = document.createElement('div');
+			toast.className = `toast ${type}`;
+
+			let icon = 'info';
+			switch (type) {
+				case 'success': icon = 'check_circle'; break;
+				case 'error': icon = 'error'; break;
+				case 'warning': icon = 'warning'; break;
+				case 'info': icon = 'info'; break;
+			}
+
+			toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="material-icons toast-icon">${icon}</span>
+                    <span class="toast-message">${message}</span>
+                    <button class="toast-close" onclick="this.parentElement.parentElement.remove()">
+                        <span class="material-icons text-sm">close</span>
+                    </button>
+                </div>
+            `;
+
+			toastContainer.appendChild(toast);
+			setTimeout(() => toast.classList.add('show'), 100);
+
+			setTimeout(() => {
+				if (toast.parentElement) {
+					toast.classList.remove('show');
+					setTimeout(() => {
+						if (toast.parentElement) {
+							toast.remove();
+						}
+					}, 300);
+				}
+			}, 3000);
+		}
+
+		// Helper function to calculate net income for Balance Sheet
+		function calculateNetIncomeForBalanceSheet() {
+			const totals = { PENDAPATAN: {}, BEBAN: {} };
+
+			// Inisialisasi akun pendapatan dan beban
+			accounts.forEach(acc => {
+				const classification = classifyAccount(acc.name, acc.code);
+				const accountCode = (acc.code || '').toString();
+				const isRevenue = classification.type === 'PENDAPATAN' || accountCode.startsWith('4');
+				const isExpense = classification.type === 'BEBAN' || accountCode.startsWith('5');
+
+				if (isRevenue) {
+					totals.PENDAPATAN[acc.id] = { code: acc.code || '', name: acc.name, total: 0 };
+				} else if (isExpense) {
+					totals.BEBAN[acc.id] = { code: acc.code || '', name: acc.name, total: 0 };
+				}
+			});
+
+			// Hitung total dari transaksi
+			transactions.forEach(trx => {
+				const amount = Number(trx.amount || trx.nominal || 0);
+				if (!amount) return;
+
+				const creditAccountId = trx.creditAccountId || trx.credit_account_id;
+				const debit_account_id = trx.debit_account_id;
+
+				// Untuk pendapatan: kredit bertambah, debit berkurang
+				if (creditAccountId && totals.PENDAPATAN[creditAccountId]) {
+					totals.PENDAPATAN[creditAccountId].total += amount;
+				}
+				if (debit_account_id && totals.PENDAPATAN[debit_account_id]) {
+					totals.PENDAPATAN[debit_account_id].total -= amount;
+				}
+
+				// Untuk beban: debit bertambah, kredit berkurang
+				if (debit_account_id && totals.BEBAN[debit_account_id]) {
+					totals.BEBAN[debit_account_id].total += amount;
+				}
+				if (creditAccountId && totals.BEBAN[creditAccountId]) {
+					totals.BEBAN[creditAccountId].total -= amount;
+				}
+			});
+
+			let totalPendapatan = 0;
+			let totalBeban = 0;
+
+			Object.values(totals.PENDAPATAN).forEach(r => { totalPendapatan += r.total; });
+			Object.values(totals.BEBAN).forEach(r => { totalBeban += r.total; });
+
+			return totalPendapatan - totalBeban; // Net Income
+		}
+
+		// Helper functions
+		function formatRupiah(number) {
+			return new Intl.NumberFormat('id-ID', {
+				style: 'currency',
+				currency: 'IDR',
+				minimumFractionDigits: 0
+			}).format(number || 0);
+		}
+
+		// Data variables
+		let accounts = [];
+		let transactions = [];
+
+		// ==================== FUNGSI UTAMA ====================
+
+		// Load data from API dengan fallback
+		async function loadData() {
+			// Ensure classification function is available globally
+			if (typeof window.classifyAccount === 'undefined') {
+				showToast('Classification function missing - reloading...', 'warning');
+				setTimeout(() => {
+					window.location.reload();
+				}, 1000);
+				return;
+			}
+
+			// Validasi API - Pastikan methods tersedia
+			if (!window.KeuTrackAPI || typeof window.KeuTrackAPI.getAccounts !== 'function') {
+				// Fallback ke localStorage
+				try {
+					const storedAccounts = localStorage.getItem('accounts');
+					const storedTransactions = localStorage.getItem('transactions');
+
+					accounts = storedAccounts ? JSON.parse(storedAccounts) : [];
+					transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+
+					showToast('Menggunakan data lokal', 'info');
+				} catch (fallbackError) {
+					showToast('Gagal memuat data', 'error');
+				}
+				return;
+			}
+
+			try {
+				accounts = await window.KeuTrackAPI.getAccounts();
+			} catch (e) {
+				// Fallback ke localStorage untuk accounts
+				try {
+					const storedAccounts = localStorage.getItem('accounts');
+					accounts = storedAccounts ? JSON.parse(storedAccounts) : [];
+				} catch (error) {
+					accounts = [];
+				}
+			}
+
+			try {
+				transactions = await window.KeuTrackAPI.getTransactions();
+			} catch (e) {
+				// Fallback ke localStorage untuk transactions
+				try {
+					const storedTransactions = localStorage.getItem('transactions');
+					transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+				} catch (error) {
+					transactions = [];
+				}
+			}
+
+			if (accounts.length === 0) showToast('Tidak ada data akun', 'warning');
+			if (transactions.length === 0) showToast('Tidak ada data transaksi', 'warning');
+
+			updateDataInfo();
+			buildIncomeStatement();
+			buildBalanceSheet();
+		}
+
+		// Wait for API function dengan retry
+		const waitForAPI = () => {
+			return new Promise((resolve) => {
+				let retries = 0;
+				const maxRetries = 10;
+
+				const checkAPI = () => {
+					if (window.KeuTrackAPI &&
+						typeof window.KeuTrackAPI.getAccounts === 'function' &&
+						typeof window.KeuTrackAPI.getTransactions === 'function') {
+						resolve(true);
+					} else if (retries < maxRetries) {
+						retries++;
+						setTimeout(checkAPI, 200);
+					} else {
+						resolve(false);
+					}
+				};
+				checkAPI();
+			});
+		};
+
+		// Build Laba Rugi dari API
+		function buildIncomeStatement() {
+			const body = document.getElementById('incomeTableBody');
+			const netCell = document.getElementById('netIncomeCell');
+			if (!body || !netCell) return;
+
+			// Cek apakah API tersedia untuk menggunakan alur berlapis
+			if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getIncomeStatement === 'function') {
+				loadIncomeStatementFromAPI();
+			} else {
+				// Fallback ke method lama (langsung dari transaksi)
+				buildIncomeStatementFromTransactions();
+			}
+		}
+
+		// Load Income Statement dari API
+		async function loadIncomeStatementFromAPI() {
+			const body = document.getElementById('incomeTableBody');
+			const netCell = document.getElementById('netIncomeCell');
+			if (!body || !netCell) return;
+
+			try {
+				const response = await window.KeuTrackAPI.getIncomeStatement();
+
+				if (!response.revenue || !response.expenses) {
+					body.innerHTML = '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-500">Belum ada data untuk laporan laba rugi</td></tr>';
+					netCell.textContent = formatRupiah(0);
+					return;
+				}
+
+				const rows = [];
+
+				// Tampilkan SEMUA akun pendapatan (termasuk yang saldo 0)
+				response.revenue.accounts.forEach(acc => {
+					rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${acc.code}</td>
+                        <td class="px-4 py-3 text-sm">${acc.name}</td>
+                        <td class="px-4 py-3 text-sm text-right font-medium ${acc.amount > 0 ? 'text-green-600' : 'text-gray-400'}">${formatRupiah(Math.abs(acc.amount))}</td>
+                    </tr>`);
+				});
+
+				// Tampilkan SEMUA akun beban (termasuk yang saldo 0)
+				response.expenses.accounts.forEach(acc => {
+					rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${acc.code}</td>
+                        <td class="px-4 py-3 text-sm">${acc.name}</td>
+                        <td class="px-4 py-3 text-sm text-right font-medium ${acc.amount > 0 ? 'text-red-600' : 'text-gray-400'}">${formatRupiah(Math.abs(acc.amount))}</td>
+                    </tr>`);
+				});
+
+				// Tambahkan baris total
+				rows.push(`<tr class="bg-green-50 font-semibold">
+                    <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL PENDAPATAN</td>
+                    <td class="px-4 py-3 text-sm text-right font-bold text-green-600">${formatRupiah(response.revenue.total)}</td>
+                </tr>`);
+
+				rows.push(`<tr class="bg-red-50 font-semibold">
+                    <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL BEBAN</td>
+                    <td class="px-4 py-3 text-sm text-right font-bold text-red-600">${formatRupiah(response.expenses.total)}</td>
+                </tr>`);
+
+				body.innerHTML = rows.join('');
+
+				// Hitung laba/rugi bersih
+				const netIncome = response.netIncome;
+				const statusText = netIncome >= 0 ? 'LABA' : 'RUGI';
+				const statusColor = netIncome >= 0 ? 'text-green-600' : 'text-red-600';
+
+				netCell.innerHTML = `${formatRupiah(Math.abs(netIncome))}<br><span class="text-xs ${statusColor}">(${statusText})</span>`;
+				netCell.className = `px-4 py-3 text-right text-sm font-semibold ${statusColor}`;
+
+			} catch (error) {
+				// Fallback ke method lama
+				buildIncomeStatementFromTransactions();
+			}
+		}
+
+		// Build Neraca dari API
+		// Build Neraca dari API (mengikuti alur berlapis)
+		function buildBalanceSheet() {
+			const body = document.getElementById('balanceTableBody');
+			if (!body) return;
+
+			// Cek apakah API tersedia untuk menggunakan alur berlapis
+			if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getBalanceSheet === 'function') {
+				loadBalanceSheetFromAPI();
+			} else {
+				// Fallback ke method lama (langsung dari transaksi)
+				buildBalanceSheetFromTransactions();
+			}
+		}
+
+		// Load Balance Sheet dari API (dari Trial Balance - Alur Berlapis)
+		async function loadBalanceSheetFromAPI() {
+			const body = document.getElementById('balanceTableBody');
+			if (!body) return;
+
+			try {
+				const response = await window.KeuTrackAPI.getBalanceSheet();
+
+				if (!response.balanceSheet) {
+					body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Belum ada data untuk neraca</td></tr>';
+					return;
+				}
+
+				const rows = [];
+				const balanceSheet = response.balanceSheet;
+
+				// ASET LANCAR
+				if (balanceSheet.assets.currentAssets.length > 0) {
+					rows.push(`<tr class="bg-green-100"><td colspan="4" class="px-4 py-2 font-semibold text-green-800">ASET LANCAR</td></tr>`);
+					balanceSheet.assets.currentAssets.forEach(asset => {
+						rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${asset.code}</td>
+                        <td class="px-4 py-3 text-sm">${asset.name}</td>
+                        <td class="px-4 py-3 text-sm text-right">${formatRupiah(asset.balance)}</td>
+                        <td class="px-4 py-3 text-sm text-right"></td>
+                    </tr>`);
+					});
+				}
+
+				// ASET TETAP
+				if (balanceSheet.assets.nonCurrentAssets.length > 0) {
+					rows.push(`<tr class="bg-green-100"><td colspan="4" class="px-4 py-2 font-semibold text-green-800">ASET TETAP</td></tr>`);
+					balanceSheet.assets.nonCurrentAssets.forEach(asset => {
+						rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${asset.code}</td>
+                        <td class="px-4 py-3 text-sm">${asset.name}</td>
+                        <td class="px-4 py-3 text-sm text-right">${formatRupiah(asset.balance)}</td>
+                        <td class="px-4 py-3 text-sm text-right"></td>
+                    </tr>`);
+					});
+				}
+
+				// TOTAL ASET
+				rows.push(`<tr class="bg-green-200 font-bold">
+                <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL ASET</td>
+                <td class="px-4 py-3 text-sm text-right font-bold">${formatRupiah(response.totals.totalAssets)}</td>
+                <td class="px-4 py-3 text-sm text-right"></td>
+            </tr>`);
+
+				// LIABILITAS
+				if (balanceSheet.liabilities.currentLiabilities.length > 0) {
+					rows.push(`<tr class="bg-red-100"><td colspan="4" class="px-4 py-2 font-semibold text-red-800">LIABILITAS</td></tr>`);
+					balanceSheet.liabilities.currentLiabilities.forEach(liability => {
+						rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${liability.code}</td>
+                        <td class="px-4 py-3 text-sm">${liability.name}</td>
+                        <td class="px-4 py-3 text-sm text-right"></td>
+                        <td class="px-4 py-3 text-sm text-right">${formatRupiah(liability.balance)}</td>
+                    </tr>`);
+					});
+				}
+
+				// EKUITAS
+				if (balanceSheet.equity.accounts.length > 0) {
+					rows.push(`<tr class="bg-blue-100"><td colspan="4" class="px-4 py-2 font-semibold text-blue-800">EKUITAS</td></tr>`);
+					balanceSheet.equity.accounts.forEach(equity => {
+						// Khusus untuk Laba Ditahan, berikan styling berbeda
+						if (equity.isRetainedEarnings) {
+							const profitClass = equity.balance >= 0 ? 'text-green-600' : 'text-red-600';
+							const profitText = equity.balance >= 0 ? 'Laba Ditahan' : 'Rugi Ditahan';
+
+							rows.push(`<tr class="hover:bg-gray-50 bg-blue-50">
+							<td class="px-4 py-3 text-sm font-mono text-blue-600">${equity.code}</td>
+							<td class="px-4 py-3 text-sm ${profitClass} font-medium">${profitText}</td>
+							<td class="px-4 py-3 text-sm text-right"></td>
+							<td class="px-4 py-3 text-sm text-right ${profitClass} font-medium">${formatRupiah(Math.abs(equity.balance))}</td>
+						</tr>`);
+						} else {
+							rows.push(`<tr class="hover:bg-gray-50">
+							<td class="px-4 py-3 text-sm font-mono">${equity.code}</td>
+							<td class="px-4 py-3 text-sm">${equity.name}</td>
+							<td class="px-4 py-3 text-sm text-right"></td>
+							<td class="px-4 py-3 text-sm text-right">${formatRupiah(equity.balance)}</td>
+						</tr>`);
+						}
+
+					});
+				}
+
+				body.innerHTML = rows.join('');
+			} catch (error) {
+				console.error('Error loading balance sheet from API:', error);
+				// Fallback ke method lama
+				buildBalanceSheetFromTransactions();
+			}
+		}
+
+		// Fallback method - buildBalanceSheetFromTransactions (method lama dengan perbaikan SAK EMKM)
+		function buildBalanceSheetFromTransactions() {
+			const body = document.getElementById('balanceTableBody');
+			if (!body) return;
+
+			console.log('Building balance sheet from transactions (SAK EMKM compliant)...');
+
+			if (accounts.length === 0) {
+				body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Belum ada data akun</td></tr>';
+				return;
+			}
+
+			const balanceSheetData = {
+				currentAssets: [],
+				nonCurrentAssets: [],
+				currentLiabilities: [],
+				equity: []
+			};
+
+			// STEP 1: Hitung Net Income dari Laba Rugi terlebih dahulu
+			let totalRevenue = 0;
+			let totalExpense = 0;
+
+			// Hitung total dari transaksi
+			transactions.forEach(trx => {
+				const amount = Number(trx.amount || trx.nominal || 0);
+				if (!amount || amount === 0) return;
+
+				const creditAccountId = trx.creditAccountId || trx.credit_account_id;
+				const debit_account_id = trx.debit_account_id;
+
+				// Cari akun kredit
+				if (creditAccountId) {
+					const creditAccount = accounts.find(acc => acc.id == creditAccountId);
+					if (creditAccount) {
+						const classification = classifyAccount(creditAccount.name, creditAccount.code);
+						if (classification.type === 'PENDAPATAN') {
+							totalRevenue += amount;
+						}
+						if (classification.type === 'BEBAN') {
+							totalExpense -= amount; // Kredit mengurangi beban
+						}
+					}
+				}
+
+				// Cari akun debit
+				if (debit_account_id) {
+					const debitAccount = accounts.find(acc => acc.id == debit_account_id);
+					if (debitAccount) {
+						const classification = classifyAccount(debitAccount.name, debitAccount.code);
+						if (classification.type === 'PENDAPATAN') {
+							totalRevenue -= amount; // Debit mengurangi pendapatan
+						}
+						if (classification.type === 'BEBAN') {
+							totalExpense += amount;
+						}
+					}
+				}
+			});
+
+			const netIncome = totalRevenue - totalExpense;
+			console.log(`Net Income: ${netIncome.toLocaleString('id-ID')}`);
+
+			// STEP 2: Kategorikan akun NERACA saja (ASET, LIABILITAS, EKUITAS)
+			accounts.forEach(acc => {
+				const classification = classifyAccount(acc.name, acc.code);
+
+				// ✅ PERBAIKAN: Skip akun BEBAN dan PENDAPATAN - mereka hanya ada di Laba Rugi
+				if (classification.type === 'BEBAN' || classification.type === 'PENDAPATAN') {
+					console.log(`Skipping ${classification.type}: ${acc.name} (hanya untuk Laba Rugi)`);
+					return;
+				}
+
+				let balance = calculateAccountBalance(acc, transactions);
+
+				// Kategorikan akun berdasarkan SAK EMKM (hanya akun NERACA)
+				if (['KAS', 'BANK', 'PIUTANG', 'PERSEDIAAN'].includes(classification.category)) {
+					balanceSheetData.currentAssets.push({
+						code: acc.code || '',
+						name: acc.name,
+						balance: balance,
+						category: 'currentAssets'
+					});
+				} else if (classification.type === 'ASET') {
+					balanceSheetData.nonCurrentAssets.push({
+						code: acc.code || '',
+						name: acc.name,
+						balance: balance,
+						category: 'nonCurrentAssets'
+					});
+				} else if (classification.type === 'LIABILITAS') {
+					balanceSheetData.currentLiabilities.push({
+						code: acc.code || '',
+						name: acc.name,
+						balance: balance,
+						category: 'currentLiabilities'
+					});
+				} else if (classification.type === 'EKUITAS') {
+					balanceSheetData.equity.push({
+						code: acc.code || '',
+						name: acc.name,
+						balance: balance,
+						category: 'equity'
+					});
+				}
+			});
+
+			// STEP 3: Tambahkan Laba Ditahan ke Ekuitas (SAK EMKM compliance)
+			if (netIncome !== 0) {
+				balanceSheetData.equity.push({
+					code: '3900',
+					name: 'Laba Ditahan',
+					balance: Math.abs(netIncome),
+					category: 'equity',
+					isRetainedEarnings: true,
+					netIncomeAmount: netIncome
+				});
+			}
+
+			// Build HTML output dengan data yang sudah SAK EMKM compliant
+			const rows = [];
+			let totalAssets = 0;
+			let totalLiabilities = 0;
+			let totalEquity = 0;
+
+			// ASET LANCAR
+			if (balanceSheetData.currentAssets.length > 0) {
+				rows.push(`<tr class="bg-green-100"><td colspan="4" class="px-4 py-2 font-semibold text-green-800">ASET LANCAR</td></tr>`);
+				balanceSheetData.currentAssets.forEach(asset => {
+					if (asset.balance !== 0) {
+						totalAssets += Math.abs(asset.balance);
+						rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${asset.code}</td>
+                        <td class="px-4 py-3 text-sm">${asset.name}</td>
+                        <td class="px-4 py-3 text-sm text-right">${formatRupiah(Math.abs(asset.balance))}</td>
+                        <td class="px-4 py-3 text-sm text-right"></td>
+                    </tr>`);
+					}
+				});
+			}
+
+			// ASET TETAP
+			if (balanceSheetData.nonCurrentAssets.length > 0) {
+				rows.push(`<tr class="bg-green-100"><td colspan="4" class="px-4 py-2 font-semibold text-green-800">ASET TETAP</td></tr>`);
+				balanceSheetData.nonCurrentAssets.forEach(asset => {
+					if (asset.balance !== 0) {
+						totalAssets += Math.abs(asset.balance);
+						rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${asset.code}</td>
+                        <td class="px-4 py-3 text-sm">${asset.name}</td>
+                        <td class="px-4 py-3 text-sm text-right">${formatRupiah(Math.abs(asset.balance))}</td>
+                        <td class="px-4 py-3 text-sm text-right"></td>
+                    </tr>`);
+					}
+				});
+			}
+
+			// TOTAL ASET
+			rows.push(`<tr class="bg-green-200 font-bold">
+            <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL ASET</td>
+            <td class="px-4 py-3 text-sm text-right font-bold">${formatRupiah(totalAssets)}</td>
+            <td class="px-4 py-3 text-sm text-right"></td>
+        </tr>`);
+
+			// LIABILITAS
+			if (balanceSheetData.currentLiabilities.length > 0) {
+				rows.push(`<tr class="bg-red-100"><td colspan="4" class="px-4 py-2 font-semibold text-red-800">LIABILITAS</td></tr>`);
+				balanceSheetData.currentLiabilities.forEach(liability => {
+					if (liability.balance !== 0) {
+						totalLiabilities += Math.abs(liability.balance);
+						rows.push(`<tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-mono">${liability.code}</td>
+                        <td class="px-4 py-3 text-sm">${liability.name}</td>
+                        <td class="px-4 py-3 text-sm text-right"></td>
+                        <td class="px-4 py-3 text-sm text-right">${formatRupiah(Math.abs(liability.balance))}</td>
+                    </tr>`);
+					}
+				});
+			}
+
+			// EKUITAS
+			if (balanceSheetData.equity.length > 0) {
+				rows.push(`<tr class="bg-blue-100"><td colspan="4" class="px-4 py-2 font-semibold text-blue-800">EKUITAS</td></tr>`);
+				balanceSheetData.equity.forEach(equity => {
+					if (equity.balance !== 0) {
+						totalEquity += Math.abs(equity.balance);
+						// Khusus untuk Laba Ditahan, berikan styling berbeda
+						if (equity.isRetainedEarnings) {
+							const profitClass = equity.netIncomeAmount >= 0 ? 'text-green-600' : 'text-red-600';
+							const profitText = equity.netIncomeAmount >= 0 ? 'Laba' : 'Rugi';
+							rows.push(`<tr class="hover:bg-gray-50 bg-blue-50">
+                            <td class="px-4 py-3 text-sm font-mono text-blue-600">${equity.code}</td>
+                            <td class="px-4 py-3 text-sm ${profitClass} font-medium">${equity.name} (${profitText} Bersih)</td>
+                            <td class="px-4 py-3 text-sm text-right"></td>
+                            <td class="px-4 py-3 text-sm text-right ${profitClass} font-medium">${formatRupiah(equity.balance)}</td>
+                        </tr>`);
+						} else {
+							rows.push(`<tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 text-sm font-mono">${equity.code}</td>
+                            <td class="px-4 py-3 text-sm">${equity.name}</td>
+                            <td class="px-4 py-3 text-sm text-right"></td>
+                            <td class="px-4 py-3 text-sm text-right">${formatRupiah(Math.abs(equity.balance))}</td>
+                        </tr>`);
+						}
+					}
+				});
+			}
+
+			// TOTAL LIABILITAS + EKUITAS
+			const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+			rows.push(`<tr class="bg-gray-200 font-bold">
+            <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL LIABILITAS + EKUITAS</td>
+            <td class="px-4 py-3 text-sm text-right"></td>
+            <td class="px-4 py-3 text-sm text-right font-bold">${formatRupiah(totalLiabilitiesAndEquity)}</td>
+        </tr>`);
+
+			// Status balancing
+			const isBalanced = Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.01;
+			const balanceStatus = isBalanced ? '✅ SEIMBANG' : '❌ TIDAK SEIMBANG';
+			const statusColor = isBalanced ? 'text-green-600' : 'text-red-600';
+
+			// Informasi compliance
+			const netIncomeInfo = netIncome !== 0 ?
+				` • Laba Bersih: ${formatRupiah(Math.abs(netIncome))} (${netIncome >= 0 ? 'Laba' : 'Rugi'})` : '';
+
+			rows.push(`<tr class="bg-yellow-50 text-xs text-gray-600">
+            <td colspan="4" class="px-4 py-2 text-center">
+                🔄 Mode Fallback • Standar: <span class="font-semibold text-blue-600">SAK EMKM</span> • 
+                Status: <span class="${statusColor} font-semibold">${balanceStatus}</span>${netIncomeInfo} • 
+                ${new Date().toLocaleString('id-ID')}
+            </td>
+        </tr>`);
+
+			body.innerHTML = rows.join('');
+
+			console.log('Balance sheet built successfully (SAK EMKM compliant)');
+		}
+
+		// Helper function untuk menghitung saldo akun
+		function calculateAccountBalance(account, transactions) {
+			let balance = 0;
+
+			transactions.forEach(trx => {
+				const amount = Number(trx.amount || trx.nominal || 0);
+				if (!amount) return;
+
+				const creditAccountId = trx.creditAccountId || trx.credit_account_id;
+				const debit_account_id = trx.debit_account_id;
+
+				// Tentukan apakah akun ini debit atau kredit
+				if (debit_account_id == account.id) {
+					balance += amount;
+				}
+				if (creditAccountId == account.id) {
+					balance -= amount;
+				}
+			});
+
+			return balance;
+		}
+
+		// Export functions
+		// Helper function to format currency for export
+		function formatCurrencyForExport(amount) {
+			return amount ? amount.toLocaleString('id-ID') : '0';
+		}
+
+		// Helper function to get current date for filename
+		function getCurrentDateString() {
+			const now = new Date();
+			const day = String(now.getDate()).padStart(2, '0');
+			const month = String(now.getMonth() + 1).padStart(2, '0');
+			const year = now.getFullYear();
+			return `${day}-${month}-${year}`;
+		}
+
+		// ==================== INCOME STATEMENT EXPORT FUNCTIONS ====================
+
+		// Export Income Statement to Excel
+		function exportIncomeExcel() {
+			try {
+				console.log('📊 [EXPORT] Starting Income Statement Excel export...');
+				const table = document.getElementById('incomeTable');
+				if (!table) {
+					showToast('Tabel laba rugi tidak ditemukan', 'error');
+					return;
+				}
+
+				// Get data from table
+				const wb = XLSX.utils.book_new();
+				const ws = XLSX.utils.table_to_sheet(table);
+
+				// Set column widths
+				ws['!cols'] = [
+					{ width: 12 },  // KODE
+					{ width: 40 },  // PENDAPATAN/BEBAN
+					{ width: 20 }   // JUMLAH
+				];
+
+				XLSX.utils.book_append_sheet(wb, ws, 'Laba_Rugi');
+
+				const filename = `Laporan_Laba_Rugi_${getCurrentDateString()}.xlsx`;
+				XLSX.writeFile(wb, filename);
+
+				showToast('Excel laba rugi berhasil diunduh', 'success');
+				console.log('✅ [EXPORT] Income Statement Excel export completed');
+			} catch (error) {
+				console.error('❌ [EXPORT] Income Statement Excel export failed:', error);
+				showToast('Gagal mengexport laba rugi ke Excel', 'error');
+			}
+		}
+
+		// Export Income Statement to PDF
+		function exportIncomePDF() {
+			try {
+				console.log('📊 [EXPORT] Starting Income Statement PDF export...');
+				const { jsPDF } = window.jspdf;
+				const doc = new jsPDF('p', 'mm', 'a4'); // portrait
+
+				// Title
+				doc.setFontSize(16);
+				doc.text('LAPORAN LABA RUGI', 105, 20, { align: 'center' });
+				doc.setFontSize(12);
+				doc.text(`KeuTrack - Generated: ${new Date().toLocaleDateString('id-ID')}`, 105, 30, { align: 'center' });
+
+				// Get table data
+				const table = document.getElementById('incomeTable');
+				if (!table) {
+					showToast('Tabel laba rugi tidak ditemukan', 'error');
+					return;
+				}
+
+				const headers = ['KODE', 'PENDAPATAN / BEBAN', 'JUMLAH'];
+				const rows = [];
+
+				const tbody = table.querySelector('tbody');
+				if (tbody) {
+					const trows = tbody.querySelectorAll('tr');
+					trows.forEach(row => {
+						const cells = row.querySelectorAll('td');
+						if (cells.length >= 3) {
+							rows.push([
+								cells[0].textContent.trim(),
+								cells[1].textContent.trim(),
+								cells[2].textContent.trim()
+							]);
+						}
+					});
+				}
+
+				// Add footer row (net income)
+				const netIncomeCell = document.getElementById('netIncomeCell');
+				if (netIncomeCell) {
+					rows.push([
+						'',
+						'Laba/Rugi Bersih',
+						netIncomeCell.textContent.trim()
+					]);
+				}
+
+				doc.autoTable({
+					head: [headers],
+					body: rows,
+					startY: 40,
+					styles: {
+						fontSize: 10,
+						cellPadding: 3
+					},
+					headStyles: {
+						fillColor: [41, 128, 185],
+						textColor: 255,
+						fontStyle: 'bold'
+					},
+					columnStyles: {
+						0: { halign: 'center', cellWidth: 30 }, // KODE
+						1: { cellWidth: 100 }, // PENDAPATAN/BEBAN
+						2: { halign: 'right', cellWidth: 40 }  // JUMLAH
+					}
+				});
+
+				const filename = `Laporan_Laba_Rugi_${getCurrentDateString()}.pdf`;
+				doc.save(filename);
+
+				showToast('PDF laba rugi berhasil diunduh', 'success');
+				console.log('✅ [EXPORT] Income Statement PDF export completed');
+			} catch (error) {
+				console.error('❌ [EXPORT] Income Statement PDF export failed:', error);
+				showToast('Gagal mengexport laba rugi ke PDF', 'error');
+			}
+		}
+
+		// ==================== BALANCE SHEET EXPORT FUNCTIONS ====================
+
+		// Export Balance Sheet to Excel
+		function exportBalanceExcel() {
+			try {
+				console.log('📊 [EXPORT] Starting Balance Sheet Excel export...');
+				const table = document.getElementById('balanceTable');
+				if (!table) {
+					showToast('Tabel neraca tidak ditemukan', 'error');
+					return;
+				}
+
+				// Get data from table
+				const wb = XLSX.utils.book_new();
+				const ws = XLSX.utils.table_to_sheet(table);
+
+				// Set column widths
+				ws['!cols'] = [
+					{ width: 12 },  // KODE
+					{ width: 40 },  // NAMA AKUN
+					{ width: 20 },  // DEBIT
+					{ width: 20 }   // KREDIT
+				];
+
+				XLSX.utils.book_append_sheet(wb, ws, 'Neraca');
+
+				const filename = `Neraca_${getCurrentDateString()}.xlsx`;
+				XLSX.writeFile(wb, filename);
+
+				showToast('Excel neraca berhasil diunduh', 'success');
+				console.log('✅ [EXPORT] Balance Sheet Excel export completed');
+			} catch (error) {
+				console.error('❌ [EXPORT] Balance Sheet Excel export failed:', error);
+				showToast('Gagal mengexport neraca ke Excel', 'error');
+			}
+		}
+
+		// Export Balance Sheet to PDF
+		function exportBalancePDF() {
+			try {
+				console.log('📊 [EXPORT] Starting Balance Sheet PDF export...');
+				const { jsPDF } = window.jspdf;
+				const doc = new jsPDF('p', 'mm', 'a4'); // portrait
+
+				// Title
+				doc.setFontSize(16);
+				doc.text('NERACA', 105, 20, { align: 'center' });
+				doc.setFontSize(12);
+				doc.text(`KeuTrack - Generated: ${new Date().toLocaleDateString('id-ID')}`, 105, 30, { align: 'center' });
+
+				// Get table data
+				const table = document.getElementById('balanceTable');
+				if (!table) {
+					showToast('Tabel neraca tidak ditemukan', 'error');
+					return;
+				}
+
+				const headers = ['KODE', 'NAMA AKUN', 'DEBIT', 'KREDIT'];
+				const rows = [];
+
+				const tbody = table.querySelector('tbody');
+				if (tbody) {
+					const trows = tbody.querySelectorAll('tr');
+					trows.forEach(row => {
+						const cells = row.querySelectorAll('td');
+						if (cells.length >= 4) {
+							rows.push([
+								cells[0].textContent.trim(),
+								cells[1].textContent.trim(),
+								cells[2].textContent.trim(),
+								cells[3].textContent.trim()
+							]);
+						}
+					});
+				}
+
+				doc.autoTable({
+					head: [headers],
+					body: rows,
+					startY: 40,
+					styles: {
+						fontSize: 9,
+						cellPadding: 2.5
+					},
+					headStyles: {
+						fillColor: [34, 139, 34],
+						textColor: 255,
+						fontStyle: 'bold'
+					},
+					columnStyles: {
+						0: { halign: 'center', cellWidth: 25 }, // KODE
+						1: { cellWidth: 80 }, // NAMA AKUN
+						2: { halign: 'right', cellWidth: 35 }, // DEBIT
+						3: { halign: 'right', cellWidth: 35 }  // KREDIT
+					}
+				});
+
+				const filename = `Neraca_${getCurrentDateString()}.pdf`;
+				doc.save(filename);
+
+				showToast('PDF neraca berhasil diunduh', 'success');
+				console.log('✅ [EXPORT] Balance Sheet PDF export completed');
+			} catch (error) {
+				console.error('❌ [EXPORT] Balance Sheet PDF export failed:', error);
+				showToast('Gagal mengexport neraca ke PDF', 'error');
+			}
+		}
+
+		// Expose export functions to global scope for HTML onclick attributes
+		window.exportIncomeExcel = exportIncomeExcel;
+		window.exportIncomePDF = exportIncomePDF;
+		window.exportBalanceExcel = exportBalanceExcel;
+		window.exportBalancePDF = exportBalancePDF;
+
+		// Refresh data function
+		async function refreshData() {
+			await loadData();
+			updateDataInfo();
+		}
+
+		// Update data info
+		function updateDataInfo() {
+			const dataInfo = document.getElementById('dataInfo');
+			if (dataInfo) {
+				const accountCount = accounts.length;
+				const transactionCount = transactions.length;
+				const lastUpdate = new Date().toLocaleTimeString('id-ID');
+
+				if (accountCount === 0 && transactionCount === 0) {
+					dataInfo.innerHTML = 'Belum ada data • Terakhir update: ' + lastUpdate;
+				} else {
+					dataInfo.innerHTML = `${accountCount} akun, ${transactionCount} transaksi • Terakhir update: ${lastUpdate}`;
+				}
+			}
+		}
+
+		// ==================== INITIALIZATION ====================
+
+		// Initialize page
+		document.addEventListener('DOMContentLoaded', async function () {
+			console.log('🚀 [LAPORAN] Page loaded, initializing...');
+
+			// Tunggu API atau fallback
+			let apiReady = false;
+			try {
+				apiReady = await waitForAPI();
+			} catch (error) {
+				console.warn('⚠️ [LAPORAN] API wait failed, using fallback');
+				apiReady = false;
+			}
+
+			if (apiReady) {
+				console.log('🔄 [LAPORAN] Starting data loading from API...');
+				await loadData();
+			} else {
+				console.log('🔄 [LAPORAN] Starting data loading from localStorage...');
+				// Load dari localStorage fallback
+				try {
+					const storedAccounts = localStorage.getItem('accounts');
+					const storedTransactions = localStorage.getItem('transactions');
+
+					accounts = storedAccounts ? JSON.parse(storedAccounts) : [];
+					transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+
+					console.log('✅ [FALLBACK] Loaded from localStorage - accounts:', accounts.length, 'transactions:', transactions.length);
+					showToast('Mode offline - menggunakan data lokal', 'info');
+
+					buildIncomeStatement();
+					buildBalanceSheet();
+					updateDataInfo();
+				} catch (error) {
+					console.error('❌ [FALLBACK] Error loading from localStorage:', error);
+					showToast('Gagal memuat data', 'error');
+				}
+			}
+
+			// Mobile menu functionality
+			const mobileMenuButton = document.getElementById('mobileMenuButton');
+			const mobileMenu = document.querySelector('.mobile-menu');
+			const mobileOverlay = document.getElementById('mobileOverlay');
+
+			if (mobileMenuButton && mobileMenu && mobileOverlay) {
+				mobileMenuButton.addEventListener('click', () => {
+					mobileMenu.classList.toggle('active');
+					mobileOverlay.classList.toggle('active');
+				});
+
+				mobileOverlay.addEventListener('click', () => {
+					mobileMenu.classList.remove('active');
+					mobileOverlay.classList.remove('active');
+				});
+
+				// Close menu when links are clicked
+				document.querySelectorAll('.mobile-menu a').forEach(link => {
+					link.addEventListener('click', () => {
+						mobileMenu.classList.remove('active');
+						mobileOverlay.classList.remove('active');
+					});
+				});
+			}
+
+			// Logout functionality
+			document.getElementById('logoutButton').addEventListener('click', () => {
+				if (confirm('Apakah Anda yakin ingin keluar?')) {
+					localStorage.removeItem('currentUser');
+					localStorage.removeItem('userPreferences');
+					window.location.href = 'login.html';
+				}
+			});
+		});
+
+		// Function untuk mengatur menu aktif
+		function setActiveMenu() {
+			document.querySelectorAll('nav a').forEach(link => {
+				link.classList.remove('bg-white/20');
+			});
+
+			const currentPage = window.location.pathname.split('/').pop();
+			document.querySelectorAll('nav a').forEach(link => {
+				const href = link.getAttribute('href');
+				if (href === currentPage) {
+					link.classList.add('bg-white/20');
+				}
+			});
+		}
+
+		// Panggil function saat halaman dimuat
+		document.addEventListener('DOMContentLoaded', function () {
+			setActiveMenu();
+
+			const mobileMenuButton = document.getElementById('mobileMenuButton');
+			if (mobileMenuButton) {
+				mobileMenuButton.addEventListener('click', setActiveMenu);
+			}
+		});
+	</script>
+</body>
+
+</html>

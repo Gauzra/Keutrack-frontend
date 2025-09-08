@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KeuTrack - Siklus Akuntansi</title>
+  <link rel="icon" type="image/svg+xml" href="./Images/logo.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/accountClassification.js"></script>
+  <script>
+    // Suppress Tailwind CSS production warning
+    if (typeof window !== 'undefined' && window.console && window.console.warn) {
+      const originalWarn = console.warn;
+      console.warn = function(...args) {
+        if (args[0] && args[0].includes && args[0].includes('should not be used in production')) {
+          return; // Suppress Tailwind production warning
+        }
+        originalWarn.apply(console, args);
+      };
+    }
+    
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Source Sans Pro', 'sans-serif'] },
+          colors: { primary: '#2c3e50', success: '#10B981', danger: '#EF4444' }
+        }
+      }
+    }
+  </script>
+  <style>
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 350px;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      transform: translateX(400px);
+      transition: transform 0.3s ease-in-out;
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+    
+    .toast.show {
+      transform: translateX(0);
+    }
+    
+    .toast.success {
+      background-color: #10B981;
+      color: white;
+      border-left: 4px solid #059669;
+    }
+    
+    .toast.error {
+      background-color: #EF4444;
+      color: white;
+      border-left: 4px solid #DC2626;
+    }
+    
+    .toast.info {
+      background-color: #3B82F6;
+      color: white;
+      border-left: 4px solid #2563EB;
+    }
+    
+    .toast.warning {
+      background-color: #F59E0B;
+      color: white;
+      border-left: 4px solid #D97706;
+    }
+    
+    .toast-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .toast-icon {
+      flex-shrink: 0;
+    }
+    
+    .toast-message {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    .toast-close {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .toast-close:hover {
+      opacity: 1;
+    }
+
+    .ledger-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .ledger-table th {
+      text-align: center;
+      padding: 12px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: #6b7280;
+      background-color: #f9fafb;
+    }
+
+    .ledger-table td {
+      padding: 12px 10px;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    .ledger-table td:nth-child(1) {
+      text-align: left;
+      color: #6b7280;
+    }
+
+    .ledger-table td:nth-child(2) {
+      text-align: left;
+      color: #374151;
+    }
+
+    .ledger-table td:nth-child(3),
+    .ledger-table td:nth-child(4),
+    .ledger-table td:nth-child(5) {
+      text-align: right;
+    }
+
+    .ledger-table td:nth-child(5) {
+      font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-menu {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        width: 80% !important;
+        max-width: 300px;
+      }
+
+      .mobile-menu.active {
+        transform: translateX(0);
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .mobile-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 30;
+      }
+
+      .mobile-overlay.active {
+        display: block;
+      }
+
+      .ledger-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .ledger-table {
+        min-width: 100%;
+        width: auto;
+        margin: 0;
+      }
+
+      .ledger-table th,
+      .ledger-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans">
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Mobile overlay for closing sidebar -->
+  <div id="mobileOverlay" class="mobile-overlay"></div>
+
+  <!-- Mobile Header -->
+  <div class="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white p-4 z-50">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-1">
+        <button id="mobileMenuButton" class="text-white">
+          <span class="material-icons">menu</span>
+        </button>
+        <img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-10 h-10">
+        <span class="text-xl font-semibold pt-1.5">KeuTrack</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="fixed inset-y-0 left-0 w-64 bg-primary text-white mobile-menu lg:translate-x-0 z-40 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50]">
+    <div class="p-6 hidden lg:block">
+      <div class="flex items-center space-x-1">
+        <img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-[70px] h-[70px]">
+        <span class="text-2xl font-semibold pt-2.5">KeuTrack</span>
+      </div>
+    </div>
+    <nav class="mt-20 lg:mt-6">
+      <ul class="space-y-2 px-4">
+        <li>
+          <a href="dashboard.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+            <span class="material-icons">analytics</span>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="akun.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+            <span class="material-icons">account_balance</span>
+            <span>Pengelolaan Akun</span>
+          </a>
+        </li>
+        <li>
+          <a href="transaksi.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+            <span class="material-icons">swap_horiz</span>
+            <span>Transaksi</span>
+          </a>
+        </li>
+        <li>
+          <a href="siklus_akuntansi.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/20">
+            <span class="material-icons">account_tree</span>
+            <span>Siklus Akuntansi</span>
+          </a>
+        </li>
+        <li>
+          <a href="laporankeuangan.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+            <span class="material-icons">summarize</span>
+            <span>Laporan Keuangan</span>
+          </a>
+        </li>
+        <li>
+          <a href="profil.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+            <span class="material-icons">person</span>
+            <span>Profil</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <div class="absolute bottom-0 w-full p-4">
+      <button id="logoutButton" class="flex items-center space-x-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+        <span class="material-icons">logout</span>
+        <span>Log Out</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="lg:ml-64 p-4 lg:p-8 mt-16 lg:mt-0">
+    <!-- Header -->
+    <div class="bg-primary text-white rounded-lg p-6 mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold">Siklus Akuntansi</h1>
+          <p class="text-white/80 mt-1">Jurnal Umum, Buku Besar, dan Neraca Saldo</p>
+          <div class="text-white/60 text-sm mt-2">
+            <span id="dataInfo">Memuat data...</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+            <span class="material-icons align-middle mr-1">print</span>
+            Cetak
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <button onclick="showTab('jurnal')" id="tab-jurnal" class="tab-button border-b-2 border-primary text-primary py-2 px-1 text-sm font-medium">
+            Jurnal Umum
+          </button>
+          <button onclick="showTab('buku-besar')" id="tab-buku-besar" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium">
+            Buku Besar
+          </button>
+          <button onclick="showTab('neraca-saldo')" id="tab-neraca-saldo" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium">
+            Neraca Saldo
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="tab-content">
+      <!-- Jurnal Umum Tab -->
+      <div id="jurnal-tab" class="tab-content">
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800">Jurnal Umum</h2>
+              <p class="text-sm text-gray-600 mt-1">Semua transaksi keuangan dalam format jurnal</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="exportJournalExcel()" class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+                <span class="material-icons text-sm align-middle mr-1">grid_on</span> Excel
+              </button>
+              <button onclick="exportJournalPDF()" class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+                <span class="material-icons text-sm align-middle mr-1">picture_as_pdf</span> PDF
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table id="journalTable" class="min-w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">TGL</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">BLN</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">THN</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KODE</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NAMA REKENING</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KETERANGAN</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+                </tr>
+              </thead>
+              <tbody id="journalTableBody" class="divide-y divide-gray-200">
+                <!-- Baris jurnal akan diisi JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buku Besar Tab -->
+      <div id="buku-besar-tab" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 space-y-2 lg:space-y-0">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800">Buku Besar</h2>
+              <p class="text-sm text-gray-600 mt-1">Saldo berjalan untuk setiap akun keuangan</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="exportLedgerExcel()" class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+                <span class="material-icons text-sm align-middle mr-1">grid_on</span> Excel
+              </button>
+              <button onclick="exportLedgerPDF()" class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+                <span class="material-icons text-sm align-middle mr-1">picture_as_pdf</span> PDF
+              </button>
+            </div>
+          </div>
+          <div id="ledgerContainer" class="space-y-8"></div>
+        </div>
+      </div>
+
+      <!-- Neraca Saldo Tab -->
+      <div id="neraca-saldo-tab" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800">Neraca Saldo</h2>
+              <p class="text-sm text-gray-600 mt-1">Ringkasan saldo akhir setiap akun</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="exportTrialBalanceExcel()" class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+                <span class="material-icons text-sm align-middle mr-1">grid_on</span> Excel
+              </button>
+              <button onclick="exportTrialBalancePDF()" class="px-3 py-2 bg-primary/10 text-primary rounded hover:bg-primary/20 transition">
+                <span class="material-icons text-sm align-middle mr-1">picture_as_pdf</span> PDF
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table id="trialBalanceTable" class="min-w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">KODE</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">NAMA AKUN</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+                </tr>
+              </thead>
+              <tbody id="trialBalanceTableBody" class="divide-y divide-gray-200">
+                <!-- Baris neraca saldo akan diisi JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+   
+   // Toast Notification System
+function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toastContainer');
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  let icon = 'info';
+  switch(type) {
+    case 'success': icon = 'check_circle'; break;
+    case 'error': icon = 'error'; break;
+    case 'warning': icon = 'warning'; break;
+    case 'info': icon = 'info'; break;
+  }
+  
+  toast.innerHTML = `
+    <div class="toast-content">
+      <span class="material-icons toast-icon">${icon}</span>
+      <span class="toast-message">${message}</span>
+      <button class="toast-close" onclick="this.parentElement.parentElement.remove()">
+        <span class="material-icons text-sm">close</span>
+      </button>
+    </div>
+  `;
+  
+  toastContainer.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 100);
+  
+  setTimeout(() => {
+    if (toast.parentElement) {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 300);
+    }
+  }, 3000);
+}
+
+// Data variables
+let accounts = [];
+let transactions = [];
+
+// Helper functions
+// Helper functions - menggunakan accountClassification.js yang sudah di-load
+// function inferCategory dan isCreditNormal sudah tersedia dari accountClassification.js
+
+function formatRupiah(number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(number || 0);
+}
+
+// ==================== FUNGSI LOAD DATA DENGAN VALIDASI API ====================
+
+async function loadData() {
+  // ✅ VALIDASI API - Pastikan methods tersedia
+  if (!window.KeuTrackAPI || typeof window.KeuTrackAPI.getAccounts !== 'function') {
+    console.error('❌ [SIKLUS] KeuTrackAPI.getAccounts is not a function');
+    console.error('❌ [SIKLUS] window.KeuTrackAPI:', window.KeuTrackAPI);
+    
+    // Fallback ke localStorage
+    try {
+      const storedAccounts = localStorage.getItem('accounts');
+      const storedTransactions = localStorage.getItem('transactions');
+      
+      accounts = storedAccounts ? JSON.parse(storedAccounts) : [];
+      transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+      
+      console.log('✅ [FALLBACK] Loaded from localStorage - accounts:', accounts.length, 'transactions:', transactions.length);
+      showToast('Menggunakan data lokal', 'info');
+    } catch (fallbackError) {
+      console.error('❌ [FALLBACK] Error loading from localStorage:', fallbackError);
+      showToast('Gagal memuat data', 'error');
+    }
+    return;
+  }
+  
+  try {
+    console.log('💾 [SIKLUS] Loading accounts from API...');
+    accounts = await window.KeuTrackAPI.getAccounts();
+    console.log('✅ [SIKLUS] Accounts loaded successfully:', accounts.length);
+  } catch (e) {
+    console.error('❌ [SIKLUS] Error loading accounts:', e);
+    // Fallback ke localStorage untuk accounts
+    try {
+      const storedAccounts = localStorage.getItem('accounts');
+      accounts = storedAccounts ? JSON.parse(storedAccounts) : [];
+      console.log('✅ [FALLBACK] Loaded accounts from localStorage after error:', accounts.length);
+    } catch (error) {
+      console.error('❌ [FALLBACK] Error loading accounts from localStorage:', error);
+      accounts = [];
+    }
+  }
+  
+  try {
+    console.log('💾 [SIKLUS] Loading transactions from API...');
+    transactions = await window.KeuTrackAPI.getTransactions();
+    console.log('✅ [SIKLUS] Transactions loaded successfully:', transactions.length);
+  } catch (e) {
+    console.error('❌ [SIKLUS] Error loading transactions:', e);
+    // Fallback ke localStorage untuk transactions
+    try {
+      const storedTransactions = localStorage.getItem('transactions');
+      transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+      console.log('✅ [FALLBACK] Loaded transactions from localStorage after error:', transactions.length);
+    } catch (error) {
+      console.error('❌ [FALLBACK] Error loading transactions from localStorage:', error);
+      transactions = [];
+    }
+  }
+  
+  if (accounts.length === 0) showToast('Tidak ada data akun', 'warning');
+  if (transactions.length === 0) showToast('Tidak ada data transaksi', 'warning');
+  
+  updateDataInfo();
+}
+
+// Wait for API function dengan retry
+const waitForAPI = () => {
+  return new Promise((resolve) => {
+    let retries = 0;
+    const maxRetries = 10;
+    
+    const checkAPI = () => {
+      console.log('🔍 [SIKLUS] Checking API availability, attempt:', retries + 1);
+      
+      if (window.KeuTrackAPI && 
+          typeof window.KeuTrackAPI.getAccounts === 'function' &&
+          typeof window.KeuTrackAPI.getTransactions === 'function') {
+        console.log('✅ [SIKLUS] API is ready with all methods!');
+        resolve(true);
+      } else if (retries < maxRetries) {
+        retries++;
+        setTimeout(checkAPI, 200);
+      } else {
+        console.warn('⚠️ [SIKLUS] API failed to load, using fallback mode');
+        resolve(false);
+      }
+    };
+    checkAPI();
+  });
+};
+
+// ==================== TAB FUNCTIONALITY ====================
+
+// Tab functionality
+function showTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.add('hidden');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.classList.remove('border-primary', 'text-primary');
+    button.classList.add('border-transparent', 'text-gray-500');
+  });
+  
+  // Show selected tab content
+  document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+  
+  // Add active class to selected tab button
+  document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-gray-500');
+  document.getElementById(`tab-${tabName}`).classList.add('border-primary', 'text-primary');
+  
+  // Build content for the selected tab
+  switch(tabName) {
+    case 'jurnal':
+      buildJournal();
+      break;
+    case 'buku-besar':
+      buildLedger();
+      break;
+    case 'neraca-saldo':
+      buildTrialBalance();
+      break;
+  }
+}
+
+// Build Jurnal Umum - Menggunakan API khusus general journal
+function buildJournal() {
+  const body = document.getElementById('journalTableBody');
+  if (!body) return;
+
+  // Cek apakah API tersedia
+  if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getGeneralJournal === 'function') {
+    loadGeneralJournalFromAPI();
+  } else {
+    // Fallback ke method lama menggunakan transactions
+    buildJournalFromTransactions();
+  }
+}
+
+// Load jurnal umum dari API khusus
+async function loadGeneralJournalFromAPI() {
+  const body = document.getElementById('journalTableBody');
+  if (!body) return;
+
+  try {
+    console.log('📋 [JURNAL] Loading general journal from API...');
+    const response = await window.KeuTrackAPI.getGeneralJournal();
+    
+    if (!response.journalEntries || response.journalEntries.length === 0) {
+      body.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">Belum ada transaksi</td></tr>';
+      return;
+    }
+
+    const rows = response.journalEntries.map(entry => {
+      return `<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm">${entry.tgl}</td>
+        <td class="px-4 py-3 text-sm">${entry.bln}</td>
+        <td class="px-4 py-3 text-sm">${entry.thn}</td>
+        <td class="px-4 py-3 text-sm font-mono">${entry.code}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${entry.account_name}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">${entry.description}</td>
+        <td class="px-4 py-3 text-sm text-right">${entry.debit > 0 ? formatRupiah(entry.debit) : ''}</td>
+        <td class="px-4 py-3 text-sm text-right">${entry.credit > 0 ? formatRupiah(entry.credit) : ''}</td>
+      </tr>`;
+    });
+
+    // Add total row
+    rows.push(`<tr class="bg-gray-50 font-semibold">
+      <td colspan="6" class="px-4 py-3 text-sm text-center">TOTAL</td>
+      <td class="px-4 py-3 text-sm text-right">${formatRupiah(response.summary.totalDebit)}</td>
+      <td class="px-4 py-3 text-sm text-right">${formatRupiah(response.summary.totalCredit)}</td>
+    </tr>`);
+
+    rows.push(`<tr class="bg-blue-50 text-xs text-gray-600">
+      <td colspan="8" class="px-4 py-2 text-center">Total ${response.summary.totalTransactions} transaksi (${response.summary.totalEntries} entri jurnal)</td>
+    </tr>`);
+
+    body.innerHTML = rows.join('');
+    console.log('✅ [JURNAL] General journal loaded successfully from API');
+    
+  } catch (error) {
+    console.error('❌ [JURNAL] Error loading from API:', error);
+    // Fallback ke method lama
+    buildJournalFromTransactions();
+  }
+}
+
+// Fallback method menggunakan transactions (method lama)
+function buildJournalFromTransactions() {
+  const body = document.getElementById('journalTableBody');
+  if (!body) return;
+
+  if (transactions.length === 0) {
+    body.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">Belum ada transaksi</td></tr>';
+    return;
+  }
+
+  const rows = [];
+  let totalDebit = 0;
+  let totalKredit = 0;
+
+  // Sortir transaksi berdasarkan urutan pembuatan (id ASC) untuk urutan yang stabil - transaksi pertama tetap di atas
+  const sortedTransactions = [...transactions].sort((a, b) => {
+    const aId = Number(a.id) || 0;
+    const bId = Number(b.id) || 0;
+    return aId - bId; // ASC - transaksi pertama tetap di atas
+  });
+
+  sortedTransactions.forEach(trx => {
+    const amount = Number(trx.amount ?? trx.nominal ?? 0);
+    if (!amount) return;
+
+    const tgl = trx.tgl || String(new Date(trx.date || Date.now()).getDate()).padStart(2, '0');
+    const bln = trx.bln || String(new Date(trx.date || Date.now()).getMonth() + 1).padStart(2, '0');
+    const thn = trx.thn || String(new Date(trx.date || Date.now()).getFullYear());
+
+    const debitAcc = accounts.find(a => a.id === trx.debit_account_id);
+    const creditAcc = accounts.find(a => a.id === trx.credit_account_id);
+
+    if (debitAcc) {
+      rows.push(`<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm">${tgl}</td>
+        <td class="px-4 py-3 text-sm">${bln}</td>
+        <td class="px-4 py-3 text-sm">${thn}</td>
+        <td class="px-4 py-3 text-sm font-mono">${debitAcc.code ?? ''}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${debitAcc.name}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">${trx.description || ''}</td>
+        <td class="px-4 py-3 text-sm text-right">${formatRupiah(amount)}</td>
+        <td class="px-4 py-3 text-sm text-right"></td>
+      </tr>`);
+      totalDebit += amount;
+    }
+    if (creditAcc) {
+      rows.push(`<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm">${tgl}</td>
+        <td class="px-4 py-3 text-sm">${bln}</td>
+        <td class="px-4 py-3 text-sm">${thn}</td>
+        <td class="px-4 py-3 text-sm font-mono">${creditAcc.code ?? ''}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${creditAcc.name}</td>
+        <td class="px-4 py-3 text-sm text-gray-600">${trx.description || ''}</td>
+        <td class="px-4 py-3 text-sm text-right"></td>
+        <td class="px-4 py-3 text-sm text-right">${formatRupiah(amount)}</td>
+      </tr>`);
+      totalKredit += amount;
+    }
+  });
+
+  // Add total row
+  rows.push(`<tr class="bg-gray-50 font-semibold">
+    <td colspan="6" class="px-4 py-3 text-sm text-center">TOTAL</td>
+    <td class="px-4 py-3 text-sm text-right">${formatRupiah(totalDebit)}</td>
+    <td class="px-4 py-3 text-sm text-right">${formatRupiah(totalKredit)}</td>
+  </tr>`);
+
+  if (sortedTransactions.length > 0) {
+    rows.push(`<tr class="bg-blue-50 text-xs text-gray-600">
+      <td colspan="8" class="px-4 py-2 text-center">Total ${sortedTransactions.length} transaksi (fallback mode)</td>
+    </tr>`);
+  }
+
+  body.innerHTML = rows.join('');
+}
+
+// Build Buku Besar - Menggunakan API khusus ledger
+function buildLedger() {
+  const container = document.getElementById('ledgerContainer');
+  if (!container) return;
+
+  // Cek apakah API tersedia
+  if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getLedger === 'function') {
+    loadLedgerFromAPI();
+  } else {
+    // Fallback ke method lama
+    buildLedgerFromTransactions();
+  }
+}
+
+// Load buku besar dari API khusus
+async function loadLedgerFromAPI() {
+  const container = document.getElementById('ledgerContainer');
+  if (!container) return;
+
+  try {
+    console.log('📖 [LEDGER] Loading ledger from API...');
+    const response = await window.KeuTrackAPI.getLedger();
+    
+    if (!response.ledgers || response.ledgers.length === 0) {
+      container.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada transaksi untuk ditampilkan di buku besar</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    let grandTotalDebit = 0;
+    let grandTotalCredit = 0;
+
+    response.ledgers.forEach(ledger => {
+      grandTotalDebit += ledger.totalDebit;
+      grandTotalCredit += ledger.totalCredit;
+
+      const tableRows = ledger.entries.map(entry => {
+        return `<tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-sm">${entry.date}</td>
+          <td class="px-4 py-3 text-sm">${entry.description}</td>
+          <td class="px-4 py-3 text-sm text-right">${entry.debit > 0 ? formatRupiah(entry.debit) : ''}</td>
+          <td class="px-4 py-3 text-sm text-right">${entry.credit > 0 ? formatRupiah(entry.credit) : ''}</td>
+          <td class="px-4 py-3 text-sm text-right font-medium">${entry.balance >= 0 ? formatRupiah(entry.balance) : ('-' + formatRupiah(Math.abs(entry.balance)))}</td>
+        </tr>`;
+      }).join('');
+
+      const card = document.createElement('div');
+      card.innerHTML = `
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <h3 class="text-base font-semibold text-gray-800 mb-2">Akun: ${ledger.account.code || ''} – ${ledger.account.name}</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full ledger-table">
+              <colgroup>
+                <col style="width: 20%;">
+                <col style="width: 40%;">
+                <col style="width: 20%;">
+                <col style="width: 20%;">
+              </colgroup>
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">TGL</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">KETERANGAN</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+                </tr>
+              </thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+        </div>`;
+      container.appendChild(card);
+    });
+
+    // Add grand total
+    if (grandTotalDebit > 0 || grandTotalCredit > 0) {
+      const grandTotalCard = document.createElement('div');
+      grandTotalCard.innerHTML = `
+        <div class="mt-6 bg-blue-50 rounded-lg p-4">
+          <h3 class="text-lg font-bold text-gray-800 mb-2">GRAND TOTAL</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full ledger-table">
+              <colgroup>
+                <col style="width: 20%;">
+                <col style="width: 40%;">
+                <col style="width: 20%;">
+                <col style="width: 20%;">
+              </colgroup>
+              <thead class="bg-blue-100">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">TGL</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">KETERANGAN</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="bg-blue-100 font-bold">
+                  <td colspan="2" class="px-4 py-3 text-sm text-center">GRAND TOTAL</td>
+                  <td class="px-4 py-3 text-sm text-right">${formatRupiah(grandTotalDebit)}</td>
+                  <td class="px-4 py-3 text-sm text-right">${formatRupiah(grandTotalCredit)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+      container.appendChild(grandTotalCard);
+    }
+
+    console.log('✅ [LEDGER] Ledger loaded successfully from API');
+    
+  } catch (error) {
+    console.error('❌ [LEDGER] Error loading from API:', error);
+    // Fallback ke method lama
+    buildLedgerFromTransactions();
+  }
+}
+
+// Fallback method untuk buku besar - COMPREHENSIVE OVERHAUL
+function buildLedgerFromTransactions() {
+  console.log('📖 [LEDGER-FALLBACK] ==================== COMPREHENSIVE LEDGER GENERATION ====================');
+  const container = document.getElementById('ledgerContainer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (accounts.length === 0) {
+    container.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada data akun</div>';
+    return;
+  }
+
+  console.log(`📖 [LEDGER-FALLBACK] Processing ${accounts.length} accounts, ${transactions.length} transactions`);
+
+  let grandTotalDebit = 0;
+  let grandTotalCredit = 0;
+  let processedAccounts = 0;
+
+  // Step 1: Filter and sort accounts that have transactions (proper Journal → Ledger flow)
+  const accountsWithTransactions = accounts.filter(acc => {
+    const hasTransactions = transactions.some(trx => 
+      trx.debit_account_id == acc.id || trx.credit_account_id == acc.id
+    );
+    return hasTransactions;
+  }).sort((a, b) => {
+    // Priority: code '1' first, then by code, then by id
+    const aCode = a.code || '';
+    const bCode = b.code || '';
+    if ((aCode === '1' || aCode === '0001') && !(bCode === '1' || bCode === '0001')) return -1;
+    if (!(aCode === '1' || aCode === '0001') && (bCode === '1' || bCode === '0001')) return 1;
+    if (aCode !== bCode) return aCode.localeCompare(bCode);
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
+
+  console.log(`📖 [LEDGER-FALLBACK] Found ${accountsWithTransactions.length} accounts with transactions`);
+
+  if (accountsWithTransactions.length === 0) {
+    container.innerHTML = '<div class="text-center text-gray-500 py-8">Tidak ada akun dengan transaksi untuk ditampilkan di buku besar</div>';
+    return;
+  }
+
+  // Step 2: Process each account to build comprehensive ledger
+  accountsWithTransactions.forEach(acc => {
+    console.log(`📖 [LEDGER-FALLBACK] ===================== PROCESSING: ${acc.name} (${acc.code || 'No Code'}) =====================`);
+    
+    // Step 3: Determine account classification for proper balance calculation
+    const classification = classifyAccount(acc.name, acc.code);
+    console.log(`📖 [LEDGER-FALLBACK] Account classification:`, {
+      name: acc.name,
+      code: acc.code,
+      type: classification.type,
+      normalBalance: classification.normalBalance,
+      category: classification.category
+    });
+
+    // Step 4: Get all journal entries (transactions) for this account
+    const accountTransactions = transactions.filter(trx => 
+      trx.debit_account_id == acc.id || trx.credit_account_id == acc.id
+    ).sort((a, b) => {
+      // Sort by transaction date, then by ID for stable ordering
+      const dateA = new Date(a.transaction_date || a.date || 0);
+      const dateB = new Date(b.transaction_date || b.date || 0);
+      if (dateA !== dateB) return dateA - dateB;
+      return (Number(a.id) || 0) - (Number(b.id) || 0);
+    });
+
+    if (accountTransactions.length === 0) {
+      console.log(`📖 [LEDGER-FALLBACK] No transactions for ${acc.name}, skipping...`);
+      return;
+    }
+
+    console.log(`📖 [LEDGER-FALLBACK] Account ${acc.name} has ${accountTransactions.length} journal entries`);
+
+    // Step 5: Initialize running balance and tracking variables
+    let runningBalance = Number(acc.balance || 0);
+    let accountTotalDebit = 0;
+    let accountTotalCredit = 0;
+    const ledgerEntries = [];
+
+    // Initial balance is included in running balance calculation but not displayed as separate row
+    console.log(`📖 [LEDGER-FALLBACK] Initial balance: ${runningBalance} (included in calculations only)`);
+
+    // Step 6: Process each journal entry to build ledger entries
+    accountTransactions.forEach((trx, index) => {
+      const amount = Number(trx.amount ?? trx.nominal ?? 0);
+      if (!amount) {
+        console.warn(`📖 [LEDGER-FALLBACK] Skipping transaction ${trx.id} - zero amount`);
+        return;
+      }
+
+      let debitAmount = 0, creditAmount = 0;
+      let description = trx.description || 'Transaksi';
+      let entryType = '';
+
+      // Format transaction date
+      const transactionDate = new Date(trx.transaction_date || trx.date || Date.now());
+      const formattedDate = `${String(transactionDate.getDate()).padStart(2, '0')}/${String(transactionDate.getMonth() + 1).padStart(2, '0')}/${transactionDate.getFullYear()}`;
+
+      // Enhanced description with opposite account context and journal reference
+      if (trx.debit_account_id == acc.id) {
+        entryType = 'debit';
+        const oppositeAccount = accounts.find(a => a.id == trx.credit_account_id);
+        if (oppositeAccount) {
+          description += ` → ${oppositeAccount.name}`;
+        }
+      } else if (trx.credit_account_id == acc.id) {
+        entryType = 'credit';
+        const oppositeAccount = accounts.find(a => a.id == trx.debit_account_id);
+        if (oppositeAccount) {
+          description += ` → ${oppositeAccount.name}`;
+        }
+      }
+      
+      // Add journal reference for traceability
+      description += ` (J${trx.id})`;
+
+      // Step 7: Apply proper debit/credit logic based on normal balance
+      if (trx.debit_account_id == acc.id) {
+        // Account is DEBITED in this journal entry
+        debitAmount = amount;
+        accountTotalDebit += amount;
+        
+        if (classification.normalBalance === 'DEBIT') {
+          // For DEBIT normal accounts (Assets, Expenses): DEBIT increases balance
+          runningBalance += amount;
+          console.log(`📖 [LEDGER-FALLBACK] ${acc.name} DEBITED +${amount} → Balance: ${runningBalance} (Asset/Expense increase)`);
+        } else {
+          // For CREDIT normal accounts (Liabilities, Equity, Revenue): DEBIT decreases balance
+          runningBalance -= amount;
+          console.log(`📖 [LEDGER-FALLBACK] ${acc.name} DEBITED -${amount} → Balance: ${runningBalance} (Liability/Equity/Revenue decrease)`);
+        }
+      }
+
+      if (trx.credit_account_id == acc.id) {
+        // Account is CREDITED in this journal entry
+        creditAmount = amount;
+        accountTotalCredit += amount;
+        
+        if (classification.normalBalance === 'CREDIT') {
+          // For CREDIT normal accounts (Liabilities, Equity, Revenue): CREDIT increases balance
+          runningBalance += amount;
+          console.log(`📖 [LEDGER-FALLBACK] ${acc.name} CREDITED +${amount} → Balance: ${runningBalance} (Liability/Equity/Revenue increase)`);
+        } else {
+          // For DEBIT normal accounts (Assets, Expenses): CREDIT decreases balance
+          runningBalance -= amount;
+          console.log(`📖 [LEDGER-FALLBACK] ${acc.name} CREDITED -${amount} → Balance: ${runningBalance} (Asset/Expense decrease)`);
+        }
+      }
+
+      // Add ledger entry if there was a debit or credit
+      if (debitAmount || creditAmount) {
+        ledgerEntries.push(`<tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-sm">${formattedDate}</td>
+          <td class="px-4 py-3 text-sm">${description}</td>
+          <td class="px-4 py-3 text-sm text-right">${debitAmount ? formatRupiah(debitAmount) : ''}</td>
+          <td class="px-4 py-3 text-sm text-right">${creditAmount ? formatRupiah(creditAmount) : ''}</td>
+        </tr>`);
+      }
+    });
+
+    // Step 8: Add account ledger to display if it has entries
+    if (ledgerEntries.length > 0) {
+      processedAccounts++;
+      grandTotalDebit += accountTotalDebit;
+      grandTotalCredit += accountTotalCredit;
+
+      const accountCard = document.createElement('div');
+      accountCard.innerHTML = `
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <h3 class="text-base font-semibold text-gray-800 mb-2">
+            Akun: ${(acc.code || 'N/A')} – ${acc.name}
+            <span class="text-sm text-gray-600 font-normal ml-2">(${classification.normalBalance} Normal • ${classification.type} • ${classification.category})</span>
+          </h3>
+          <div class="overflow-x-auto ledger-table-container">
+            <table class="min-w-full ledger-table">
+              <colgroup>
+                <col style="width: 20%;">
+                <col style="width: 40%;">
+                <col style="width: 20%;">
+                <col style="width: 20%;">
+              </colgroup>
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">TGL</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">KETERANGAN</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+                </tr>
+              </thead>
+              <tbody>${ledgerEntries.join('')}</tbody>
+            </table>
+          </div>
+          <div class="mt-3 p-3 bg-blue-50 rounded text-xs text-gray-600">
+            📊 <strong>${accountTransactions.length} transaksi</strong> • 
+            Total Debit: <strong>${formatRupiah(accountTotalDebit)}</strong> • 
+            Total Credit: <strong>${formatRupiah(accountTotalCredit)}</strong>
+          </div>
+        </div>`;
+      container.appendChild(accountCard);
+      
+      console.log(`📖 [LEDGER-FALLBACK] ✅ ${acc.name} COMPLETE:`);
+      console.log(`    Transactions: ${accountTransactions.length}`);
+      console.log(`    Final Balance: ${runningBalance}`);
+      console.log(`    Total Debit: ${accountTotalDebit}`);
+      console.log(`    Total Credit: ${accountTotalCredit}`);
+    }
+  });
+
+  // Step 9: Add comprehensive grand total summary
+  if (processedAccounts > 0) {
+    const grandTotalCard = document.createElement('div');
+    grandTotalCard.innerHTML = `
+      <div class="mt-6 bg-blue-50 rounded-lg p-4">
+        <h3 class="text-lg font-bold text-gray-800 mb-2">📊 RINGKASAN BUKU BESAR (GRAND TOTAL)</h3>
+        <div class="overflow-x-auto ledger-table-container">
+          <table class="min-w-full ledger-table">
+            <colgroup>
+              <col style="width: 20%;">
+              <col style="width: 40%;">
+              <col style="width: 20%;">
+              <col style="width: 20%;">
+            </colgroup>
+            <thead class="bg-blue-100">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">TGL</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">KETERANGAN</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">DEBIT</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">KREDIT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="bg-blue-100 font-bold">
+                <td colspan="2" class="px-4 py-3 text-sm text-center">GRAND TOTAL BUKU BESAR</td>
+                <td class="px-4 py-3 text-sm text-right">${formatRupiah(grandTotalDebit)}</td>
+                <td class="px-4 py-3 text-sm text-right">${formatRupiah(grandTotalCredit)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-3 text-sm text-gray-700">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="bg-white p-3 rounded">
+              <div class="font-semibold">Akun Diproses:</div>
+              <div class="text-lg font-bold text-blue-600">${processedAccounts}</div>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <div class="font-semibold">Total Transaksi:</div>
+              <div class="text-lg font-bold text-green-600">${transactions.length}</div>
+            </div>
+            <div class="bg-white p-3 rounded">
+              <div class="font-semibold">Status Balance:</div>
+              <div class="text-lg font-bold ${Math.abs(grandTotalDebit - grandTotalCredit) < 0.01 ? 'text-green-600' : 'text-red-600'}">
+                ${Math.abs(grandTotalDebit - grandTotalCredit) < 0.01 ? '✅ BALANCED' : '❌ UNBALANCED'}
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 text-xs text-gray-500 text-center">
+            🔄 Data Source: Frontend Fallback • Generated: ${new Date().toLocaleString('id-ID')} • 
+            Journal → Ledger flow with enhanced accounting logic
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(grandTotalCard);
+  }
+
+  console.log(`📖 [LEDGER-FALLBACK] ==================== LEDGER GENERATION COMPLETE ====================`);
+  console.log(`📖 [LEDGER-FALLBACK] Summary:`);
+  console.log(`    Processed Accounts: ${processedAccounts}`);
+  console.log(`    Grand Total Debit: ${grandTotalDebit}`);
+  console.log(`    Grand Total Credit: ${grandTotalCredit}`);
+  console.log(`    Balance Check: ${Math.abs(grandTotalDebit - grandTotalCredit) < 0.01 ? '✅ BALANCED' : '❌ UNBALANCED'}`);
+}
+
+// Build Neraca Saldo - Menggunakan API khusus trial balance
+function buildTrialBalance() {
+  const body = document.getElementById('trialBalanceTableBody');
+  if (!body) return;
+
+  console.log(`⚖️ [TRIAL-BALANCE] Starting trial balance build...`);
+  console.log(`⚖️ [TRIAL-BALANCE] API available: ${!!window.KeuTrackAPI}`);
+  console.log(`⚖️ [TRIAL-BALANCE] getTrialBalance method: ${!!(window.KeuTrackAPI && typeof window.KeuTrackAPI.getTrialBalance === 'function')}`);
+  
+  // Cek apakah API tersedia
+  if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getTrialBalance === 'function') {
+    console.log(`⚖️ [TRIAL-BALANCE] Using API method`);
+    loadTrialBalanceFromAPI();
+  } else {
+    console.log(`⚖️ [TRIAL-BALANCE] API not available, using fallback method`);
+    // Fallback ke method lama
+    buildTrialBalanceFromTransactions();
+  }
+}
+
+// Load neraca saldo dari API khusus
+async function loadTrialBalanceFromAPI() {
+  const body = document.getElementById('trialBalanceTableBody');
+  if (!body) return;
+
+  try {
+    console.log('⚖️ [TRIAL-BALANCE] Loading trial balance from API...');
+    
+    // Show loading state
+    body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Memuat neraca saldo dari server...</td></tr>';
+    
+    const response = await window.KeuTrackAPI.getTrialBalance();
+    
+    console.log('⚖️ [TRIAL-BALANCE] API Response:', response);
+    
+    if (!response.trialBalance || response.trialBalance.length === 0) {
+      console.log('⚖️ [TRIAL-BALANCE] No trial balance entries from API - showing empty message');
+      body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Belum ada transaksi untuk ditampilkan di neraca saldo</td></tr>';
+      return;
+    }
+
+    const rows = response.trialBalance.map(entry => {
+      return `<tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 text-sm font-mono">${entry.account.code || ''}</td>
+        <td class="px-4 py-3 text-sm font-medium text-gray-900">${entry.account.name}</td>
+        <td class="px-4 py-3 text-sm text-right">${entry.debitBalance > 0 ? formatRupiah(entry.debitBalance) : ''}</td>
+        <td class="px-4 py-3 text-sm text-right">${entry.creditBalance > 0 ? formatRupiah(entry.creditBalance) : ''}</td>
+      </tr>`;
+    });
+
+    // Add total row
+    rows.push(`<tr class="bg-gray-50 font-semibold">
+      <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL</td>
+      <td class="px-4 py-3 text-sm text-right">${formatRupiah(response.summary.grandTotalDebit)}</td>
+      <td class="px-4 py-3 text-sm text-right">${formatRupiah(response.summary.grandTotalCredit)}</td>
+    </tr>`);
+
+    // Add balance status
+    const balanceStatus = response.summary.isBalanced ? '✅ Seimbang' : '❌ Tidak Seimbang';
+    rows.push(`<tr class="bg-blue-50 text-xs text-gray-600">
+      <td colspan="4" class="px-4 py-2 text-center">Total ${response.summary.totalAccounts} akun dengan transaksi - Status: ${balanceStatus} - 📊 Sumber: API Server</td>
+    </tr>`);
+
+    body.innerHTML = rows.join('');
+    console.log('✅ [TRIAL-BALANCE] Trial balance loaded successfully from API');
+    
+  } catch (error) {
+    console.error('❌ [TRIAL-BALANCE] Error loading from API:', error);
+    console.log('⚖️ [TRIAL-BALANCE] Falling back to local method due to API error');
+    // Fallback ke method lama
+    buildTrialBalanceFromTransactions();
+  }
+}
+
+// Fallback method untuk neraca saldo (FIXED - hanya akun dengan transaksi)
+function buildTrialBalanceFromTransactions() {
+  const body = document.getElementById('trialBalanceTableBody');
+  if (!body) return;
+
+  console.log(`⚖️ [TRIAL-BALANCE-FALLBACK] Starting with ${accounts.length} accounts and ${transactions.length} transactions`);
+
+  if (accounts.length === 0) {
+    console.log(`⚖️ [TRIAL-BALANCE-FALLBACK] No accounts found`);
+    body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Belum ada data akun</td></tr>';
+    return;
+  }
+
+  if (transactions.length === 0) {
+    console.log(`⚖️ [TRIAL-BALANCE-FALLBACK] No transactions found - trial balance should be empty`);
+    body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Belum ada transaksi untuk ditampilkan di neraca saldo</td></tr>';
+    return;
+  }
+
+  const rows = [];
+  let totalDebit = 0;
+  let totalKredit = 0;
+
+  // STEP 1: Filter HANYA akun yang memiliki transaksi (mengikuti alur akuntansi yang benar)
+  // Neraca saldo hanya menampilkan akun yang sudah digunakan dalam transaksi
+  const accountsWithTransactions = accounts.filter(acc => {
+    const hasTransactions = transactions.some(trx => {
+      const debitMatch = Number(trx.debit_account_id) === Number(acc.id);
+      const creditMatch = Number(trx.credit_account_id) === Number(acc.id);
+      return debitMatch || creditMatch;
+    });
+    if (hasTransactions) {
+      console.log(`⚖️ [TRIAL-BALANCE-FALLBACK] Account '${acc.name}' has transactions`);
+    }
+    return hasTransactions;
+  });
+
+  console.log(`⚖️ [TRIAL-BALANCE-FALLBACK] Found ${accountsWithTransactions.length} accounts with transactions (out of ${accounts.length} total accounts)`);
+
+  if (accountsWithTransactions.length === 0) {
+    console.log(`⚖️ [TRIAL-BALANCE-FALLBACK] No accounts have transactions - trial balance should be empty`);
+    body.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">Tidak ada akun dengan transaksi untuk ditampilkan di neraca saldo</td></tr>';
+    return;
+  }
+
+  // STEP 2: Proses setiap akun yang memiliki transaksi
+  accountsWithTransactions.forEach(acc => {
+    const classification = classifyAccount(acc.name, acc.code);
+    let balance = Number(acc.balance || 0);
+
+    // Calculate balance from transactions with stable sorting
+    // Sortir transaksi berdasarkan urutan pembuatan (id ASC) untuk urutan yang stabil - transaksi pertama tetap di atas
+    const sortedTransactions = [...transactions].sort((a, b) => {
+      const aId = Number(a.id) || 0;
+      const bId = Number(b.id) || 0;
+      return aId - bId; // ASC - transaksi pertama tetap di atas
+    });
+
+    // Hitung saldo menggunakan helper function yang benar
+    balance = calculateAccountBalance(acc, sortedTransactions);
+
+    // Determine debit or credit based on normal balance
+    let debitAmount = 0;
+    let creditAmount = 0;
+
+    if (classification.normalBalance === 'CREDIT') {
+      if (balance < 0) {
+        debitAmount = Math.abs(balance);
+      } else {
+        creditAmount = balance;
+      }
+    } else {
+      if (balance > 0) {
+        debitAmount = balance;
+      } else {
+        creditAmount = Math.abs(balance);
+      }
+    }
+
+    totalDebit += debitAmount;
+    totalKredit += creditAmount;
+
+    rows.push(`<tr class="hover:bg-gray-50">
+      <td class="px-4 py-3 text-sm font-mono">${acc.code ?? ''}</td>
+      <td class="px-4 py-3 text-sm font-medium text-gray-900">${acc.name}</td>
+      <td class="px-4 py-3 text-sm text-right">${debitAmount > 0 ? formatRupiah(debitAmount) : ''}</td>
+      <td class="px-4 py-3 text-sm text-right">${creditAmount > 0 ? formatRupiah(creditAmount) : ''}</td>
+    </tr>`);
+  });
+
+  // Add total row
+  rows.push(`<tr class="bg-gray-50 font-semibold">
+    <td colspan="2" class="px-4 py-3 text-sm text-center">TOTAL (Alur Berlapis: Transaksi → Jurnal → Buku Besar → Neraca Saldo)</td>
+    <td class="px-4 py-3 text-sm text-right">${formatRupiah(totalDebit)}</td>
+    <td class="px-4 py-3 text-sm text-right">${formatRupiah(totalKredit)}</td>
+  </tr>`);
+
+  // Add status row
+  const isBalanced = Math.abs(totalDebit - totalKredit) < 0.01;
+  rows.push(`<tr class="bg-blue-50 text-xs text-gray-600">
+    <td colspan="4" class="px-4 py-2 text-center">Total ${accountsWithTransactions.length} akun dengan transaksi - Status: ${isBalanced ? '✅ Seimbang' : '❌ Tidak Seimbang'}</td>
+  </tr>`);
+
+  body.innerHTML = rows.join('');
+  console.log(`✅ [TRIAL-BALANCE-FALLBACK] Trial balance generated with proper accounting flow (${accountsWithTransactions.length} accounts with transactions)`);
+}
+
+// ==================== EXPORT FUNCTIONS ====================
+
+// Helper function to format currency for export
+function formatCurrencyForExport(amount) {
+  return amount ? amount.toLocaleString('id-ID') : '0';
+}
+
+// Helper function to get current date for filename
+function getCurrentDateString() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+// ==================== JOURNAL EXPORT FUNCTIONS ====================
+
+// Export General Journal to Excel
+function exportJournalExcel() {
+  try {
+    console.log('📊 [EXPORT] Starting Journal Excel export...');
+    const table = document.getElementById('journalTable');
+    if (!table) {
+      showToast('Tabel jurnal tidak ditemukan', 'error');
+      return;
+    }
+
+    // Get data from table
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(table);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { width: 8 },   // TGL
+      { width: 8 },   // BLN  
+      { width: 8 },   // THN
+      { width: 12 },  // KODE
+      { width: 30 },  // NAMA REKENING
+      { width: 40 },  // KETERANGAN
+      { width: 15 },  // DEBIT
+      { width: 15 }   // KREDIT
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Jurnal Umum');
+    
+    const filename = `Jurnal_Umum_${getCurrentDateString()}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    showToast('Excel jurnal umum berhasil diunduh', 'success');
+    console.log('✅ [EXPORT] Journal Excel export completed');
+  } catch (error) {
+    console.error('❌ [EXPORT] Journal Excel export failed:', error);
+    showToast('Gagal mengexport jurnal ke Excel', 'error');
+  }
+}
+
+// Export General Journal to PDF
+function exportJournalPDF() {
+  try {
+    console.log('📊 [EXPORT] Starting Journal PDF export...');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4'); // landscape
+    
+    // Title
+    doc.setFontSize(16);
+    doc.text('JURNAL UMUM', 148, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(`KeuTrack - Generated: ${new Date().toLocaleDateString('id-ID')}`, 148, 30, { align: 'center' });
+    
+    // Get table data
+    const table = document.getElementById('journalTable');
+    if (!table) {
+      showToast('Tabel jurnal tidak ditemukan', 'error');
+      return;
+    }
+    
+    const headers = ['TGL', 'BLN', 'THN', 'KODE', 'NAMA REKENING', 'KETERANGAN', 'DEBIT', 'KREDIT'];
+    const rows = [];
+    
+    const tbody = table.querySelector('tbody');
+    if (tbody) {
+      const trows = tbody.querySelectorAll('tr');
+      trows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 8) {
+          rows.push([
+            cells[0].textContent.trim(),
+            cells[1].textContent.trim(),
+            cells[2].textContent.trim(),
+            cells[3].textContent.trim(),
+            cells[4].textContent.trim(),
+            cells[5].textContent.trim(),
+            cells[6].textContent.trim(),
+            cells[7].textContent.trim()
+          ]);
+        }
+      });
+    }
+    
+    doc.autoTable({
+      head: [headers],
+      body: rows,
+      startY: 40,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        6: { halign: 'right' }, // DEBIT
+        7: { halign: 'right' }  // KREDIT
+      }
+    });
+    
+    const filename = `Jurnal_Umum_${getCurrentDateString()}.pdf`;
+    doc.save(filename);
+    
+    showToast('PDF jurnal umum berhasil diunduh', 'success');
+    console.log('✅ [EXPORT] Journal PDF export completed');
+  } catch (error) {
+    console.error('❌ [EXPORT] Journal PDF export failed:', error);
+    showToast('Gagal mengexport jurnal ke PDF', 'error');
+  }
+}
+
+// ==================== LEDGER EXPORT FUNCTIONS ====================
+
+// Export Ledger to Excel
+function exportLedgerExcel() {
+  try {
+    console.log('📊 [EXPORT] Starting Ledger Excel export...');
+    const container = document.getElementById('ledgerContainer');
+    if (!container) {
+      showToast('Data buku besar tidak ditemukan', 'error');
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    
+    // Get all ledger tables
+    const ledgerCards = container.querySelectorAll('.bg-gray-50');
+    if (ledgerCards.length === 0) {
+      showToast('Tidak ada data buku besar untuk diexport', 'warning');
+      return;
+    }
+
+    ledgerCards.forEach((card, index) => {
+      const accountTitle = card.querySelector('h3');
+      const table = card.querySelector('table');
+      
+      if (accountTitle && table) {
+        const accountName = accountTitle.textContent.trim().replace(/[^a-zA-Z0-9]/g, '_').substring(0, 31);
+        const ws = XLSX.utils.table_to_sheet(table);
+        
+        // Set column widths
+        ws['!cols'] = [
+          { width: 12 }, // TGL
+          { width: 40 }, // KETERANGAN
+          { width: 15 }, // DEBIT
+          { width: 15 }  // KREDIT
+        ];
+        
+        XLSX.utils.book_append_sheet(wb, ws, accountName || `Account_${index + 1}`);
+      }
+    });
+    
+    const filename = `Buku_Besar_${getCurrentDateString()}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    showToast('Excel buku besar berhasil diunduh', 'success');
+    console.log('✅ [EXPORT] Ledger Excel export completed');
+  } catch (error) {
+    console.error('❌ [EXPORT] Ledger Excel export failed:', error);
+    showToast('Gagal mengexport buku besar ke Excel', 'error');
+  }
+}
+
+// Export Ledger to PDF
+function exportLedgerPDF() {
+  try {
+    console.log('📊 [EXPORT] Starting Ledger PDF export...');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4'); // portrait
+    
+    let currentY = 20;
+    
+    // Title
+    doc.setFontSize(16);
+    doc.text('BUKU BESAR', 105, currentY, { align: 'center' });
+    currentY += 10;
+    doc.setFontSize(12);
+    doc.text(`KeuTrack - Generated: ${new Date().toLocaleDateString('id-ID')}`, 105, currentY, { align: 'center' });
+    currentY += 15;
+    
+    const container = document.getElementById('ledgerContainer');
+    if (!container) {
+      showToast('Data buku besar tidak ditemukan', 'error');
+      return;
+    }
+    
+    const ledgerCards = container.querySelectorAll('.bg-gray-50');
+    if (ledgerCards.length === 0) {
+      showToast('Tidak ada data buku besar untuk diexport', 'warning');
+      return;
+    }
+
+    ledgerCards.forEach((card, cardIndex) => {
+      if (currentY > 250) {
+        doc.addPage();
+        currentY = 20;
+      }
+      
+      const accountTitle = card.querySelector('h3');
+      const table = card.querySelector('table');
+      
+      if (accountTitle && table) {
+        // Account title
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(accountTitle.textContent.trim(), 20, currentY);
+        currentY += 10;
+        
+        const headers = ['TGL', 'KETERANGAN', 'DEBIT', 'KREDIT'];
+        const rows = [];
+        
+        const tbody = table.querySelector('tbody');
+        if (tbody) {
+          const trows = tbody.querySelectorAll('tr');
+          trows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 4) {
+              rows.push([
+                cells[0].textContent.trim(),
+                cells[1].textContent.trim(),
+                cells[2].textContent.trim(),
+                cells[3].textContent.trim()
+              ]);
+            }
+          });
+        }
+        
+        doc.autoTable({
+          head: [headers],
+          body: rows,
+          startY: currentY,
+          styles: {
+            fontSize: 8,
+            cellPadding: 2
+          },
+          headStyles: {
+            fillColor: [52, 73, 94],
+            textColor: 255,
+            fontStyle: 'bold'
+          },
+          columnStyles: {
+            2: { halign: 'right' }, // DEBIT
+            3: { halign: 'right' }  // KREDIT
+          }
+        });
+        
+        currentY = doc.lastAutoTable.finalY + 15;
+      }
+    });
+    
+    const filename = `Buku_Besar_${getCurrentDateString()}.pdf`;
+    doc.save(filename);
+    
+    showToast('PDF buku besar berhasil diunduh', 'success');
+    console.log('✅ [EXPORT] Ledger PDF export completed');
+  } catch (error) {
+    console.error('❌ [EXPORT] Ledger PDF export failed:', error);
+    showToast('Gagal mengexport buku besar ke PDF', 'error');
+  }
+}
+
+// ==================== TRIAL BALANCE EXPORT FUNCTIONS ====================
+
+// Export Trial Balance to Excel
+function exportTrialBalanceExcel() {
+  try {
+    console.log('📊 [EXPORT] Starting Trial Balance Excel export...');
+    const table = document.getElementById('trialBalanceTable');
+    if (!table) {
+      showToast('Tabel neraca saldo tidak ditemukan', 'error');
+      return;
+    }
+
+    // Get data from table
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(table);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { width: 12 },  // KODE
+      { width: 30 },  // NAMA AKUN
+      { width: 15 },  // DEBIT
+      { width: 15 }   // KREDIT
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Neraca Saldo');
+    
+    const filename = `Neraca_Saldo_${getCurrentDateString()}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    showToast('Excel neraca saldo berhasil diunduh', 'success');
+    console.log('✅ [EXPORT] Trial Balance Excel export completed');
+  } catch (error) {
+    console.error('❌ [EXPORT] Trial Balance Excel export failed:', error);
+    showToast('Gagal mengexport neraca saldo ke Excel', 'error');
+  }
+}
+
+// Export Trial Balance to PDF
+function exportTrialBalancePDF() {
+  try {
+    console.log('📊 [EXPORT] Starting Trial Balance PDF export...');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4'); // portrait
+    
+    // Title
+    doc.setFontSize(16);
+    doc.text('NERACA SALDO', 105, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(`KeuTrack - Generated: ${new Date().toLocaleDateString('id-ID')}`, 105, 30, { align: 'center' });
+    
+    // Get table data
+    const table = document.getElementById('trialBalanceTable');
+    if (!table) {
+      showToast('Tabel neraca saldo tidak ditemukan', 'error');
+      return;
+    }
+    
+    const headers = ['KODE', 'NAMA AKUN', 'DEBIT', 'KREDIT'];
+    const rows = [];
+    
+    const tbody = table.querySelector('tbody');
+    if (tbody) {
+      const trows = tbody.querySelectorAll('tr');
+      trows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+          rows.push([
+            cells[0].textContent.trim(),
+            cells[1].textContent.trim(),
+            cells[2].textContent.trim(),
+            cells[3].textContent.trim()
+          ]);
+        }
+      });
+    }
+    
+    doc.autoTable({
+      head: [headers],
+      body: rows,
+      startY: 40,
+      styles: {
+        fontSize: 10,
+        cellPadding: 3
+      },
+      headStyles: {
+        fillColor: [34, 139, 34],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 25 }, // KODE
+        1: { cellWidth: 80 }, // NAMA AKUN
+        2: { halign: 'right', cellWidth: 40 }, // DEBIT
+        3: { halign: 'right', cellWidth: 40 }  // KREDIT
+      }
+    });
+    
+    const filename = `Neraca_Saldo_${getCurrentDateString()}.pdf`;
+    doc.save(filename);
+    
+    showToast('PDF neraca saldo berhasil diunduh', 'success');
+    console.log('✅ [EXPORT] Trial Balance PDF export completed');
+  } catch (error) {
+    console.error('❌ [EXPORT] Trial Balance PDF export failed:', error);
+    showToast('Gagal mengexport neraca saldo ke PDF', 'error');
+  }
+}
+
+// ==================== GLOBAL EXPOSURE FOR HTML ONCLICK ====================
+
+// Expose export functions to global scope for HTML onclick attributes
+window.exportJournalExcel = exportJournalExcel;
+window.exportJournalPDF = exportJournalPDF;
+window.exportLedgerExcel = exportLedgerExcel;
+window.exportLedgerPDF = exportLedgerPDF;
+window.exportTrialBalanceExcel = exportTrialBalanceExcel;
+window.exportTrialBalancePDF = exportTrialBalancePDF;
+
+// Refresh data function
+function refreshData() {
+  loadData();
+  buildJournal();
+  buildLedger();
+  buildTrialBalance();
+  updateDataInfo();
+}
+
+// Update data info
+function updateDataInfo() {
+  const dataInfo = document.getElementById('dataInfo');
+  if (dataInfo) {
+    const accountCount = accounts.length;
+    const transactionCount = transactions.length;
+    const lastUpdate = new Date().toLocaleTimeString('id-ID');
+
+    if (accountCount === 0 && transactionCount === 0) {
+      dataInfo.innerHTML = 'Belum ada data • Terakhir update: ' + lastUpdate;
+    } else {
+      dataInfo.innerHTML = `${accountCount} akun, ${transactionCount} transaksi • Terakhir update: ${lastUpdate}`;
+    }
+  }
+}
+
+// ==================== INITIALIZATION ====================
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('🚀 [SIKLUS] Page loaded, initializing...');
+  
+  // Tunggu API atau fallback
+  let apiReady = false;
+  try {
+    apiReady = await waitForAPI();
+  } catch (error) {
+    console.warn('⚠️ [SIKLUS] API wait failed, using fallback');
+    apiReady = false;
+  }
+  
+  if (apiReady) {
+    console.log('🔄 [SIKLUS] Starting data loading from API...');
+    await loadData();
+  } else {
+    console.log('🔄 [SIKLUS] Starting data loading from localStorage...');
+    // Load dari localStorage fallback
+    try {
+      const storedAccounts = localStorage.getItem('accounts');
+      const storedTransactions = localStorage.getItem('transactions');
+      
+      accounts = storedAccounts ? JSON.parse(storedAccounts) : [];
+      transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
+      
+      console.log('✅ [FALLBACK] Loaded from localStorage - accounts:', accounts.length, 'transactions:', transactions.length);
+      showToast('Mode offline - menggunakan data lokal', 'info');
+    } catch (error) {
+      console.error('❌ [FALLBACK] Error loading from localStorage:', error);
+      showToast('Gagal memuat data', 'error');
+    }
+  }
+  
+  showTab('jurnal'); // Show jurnal tab by default
+  updateDataInfo();
+
+  // Mobile menu functionality
+  const mobileMenuButton = document.getElementById('mobileMenuButton');
+  const mobileMenu = document.querySelector('.mobile-menu');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+
+  if (mobileMenuButton && mobileMenu && mobileOverlay) {
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('active');
+      mobileOverlay.classList.toggle('active');
+    });
+    
+    mobileOverlay.addEventListener('click', () => {
+      mobileMenu.classList.remove('active');
+      mobileOverlay.classList.remove('active');
+    });
+
+    // Close menu when links are clicked
+    document.querySelectorAll('.mobile-menu a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.remove('active');
+        mobileOverlay.classList.remove('active');
+      });
+    });
+  }
+
+  // Logout functionality
+  document.getElementById('logoutButton').addEventListener('click', () => {
+    if (confirm('Apakah Anda yakin ingin keluar?')) {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('userPreferences');
+      window.location.href = 'login.html';
+    }
+  });
+});
+  </script>
+</body>
+</html>
