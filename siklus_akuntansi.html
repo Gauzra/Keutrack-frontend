@@ -1051,7 +1051,7 @@ function buildLedgerFromTransactions() {
             </table>
           </div>
           <div class="mt-3 p-3 bg-blue-50 rounded text-xs text-gray-600">
-            📊 <strong>${accountTransactions.length} transaksi</strong> • 
+            <strong>${accountTransactions.length} transaksi</strong> • 
             Total Debit: <strong>${formatRupiah(accountTotalDebit)}</strong> • 
             Total Credit: <strong>${formatRupiah(accountTotalCredit)}</strong>
           </div>
@@ -1071,7 +1071,7 @@ function buildLedgerFromTransactions() {
     const grandTotalCard = document.createElement('div');
     grandTotalCard.innerHTML = `
       <div class="mt-6 bg-blue-50 rounded-lg p-4">
-        <h3 class="text-lg font-bold text-gray-800 mb-2">📊 RINGKASAN BUKU BESAR (GRAND TOTAL)</h3>
+        <h3 class="text-lg font-bold text-gray-800 mb-2">RINGKASAN BUKU BESAR (GRAND TOTAL)</h3>
         <div class="overflow-x-auto ledger-table-container">
           <table class="min-w-full ledger-table">
             <colgroup>
@@ -1113,11 +1113,6 @@ function buildLedgerFromTransactions() {
                 ${Math.abs(grandTotalDebit - grandTotalCredit) < 0.01 ? '✅ BALANCED' : '❌ UNBALANCED'}
               </div>
             </div>
-          </div>
-          <div class="mt-3 text-xs text-gray-500 text-center">
-            🔄 Data Source: Frontend Fallback • Generated: ${new Date().toLocaleString('id-ID')} • 
-            Journal → Ledger flow with enhanced accounting logic
-          </div>
         </div>
       </div>`;
     container.appendChild(grandTotalCard);
@@ -1191,7 +1186,7 @@ async function loadTrialBalanceFromAPI() {
     // Add balance status
     const balanceStatus = response.summary.isBalanced ? '✅ Seimbang' : '❌ Tidak Seimbang';
     rows.push(`<tr class="bg-blue-50 text-xs text-gray-600">
-      <td colspan="4" class="px-4 py-2 text-center">Total ${response.summary.totalAccounts} akun dengan transaksi - Status: ${balanceStatus} - 📊 Sumber: API Server</td>
+      <td colspan="4" class="px-4 py-2 text-center">Total ${response.summary.totalAccounts} akun dengan transaksi - Status: ${balanceStatus} -  Sumber: API Server</td>
     </tr>`);
 
     body.innerHTML = rows.join('');
@@ -1333,7 +1328,7 @@ function getCurrentDateString() {
 // Export General Journal to Excel
 function exportJournalExcel() {
   try {
-    console.log('📊 [EXPORT] Starting Journal Excel export...');
+    console.log('[EXPORT] Starting Journal Excel export...');
     const table = document.getElementById('journalTable');
     if (!table) {
       showToast('Tabel jurnal tidak ditemukan', 'error');
@@ -1372,7 +1367,7 @@ function exportJournalExcel() {
 // Export General Journal to PDF
 function exportJournalPDF() {
   try {
-    console.log('📊 [EXPORT] Starting Journal PDF export...');
+    console.log('[EXPORT] Starting Journal PDF export...');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('l', 'mm', 'a4'); // landscape
     
@@ -1447,7 +1442,7 @@ function exportJournalPDF() {
 // Export Ledger to Excel
 function exportLedgerExcel() {
   try {
-    console.log('📊 [EXPORT] Starting Ledger Excel export...');
+    console.log('[EXPORT] Starting Ledger Excel export...');
     const container = document.getElementById('ledgerContainer');
     if (!container) {
       showToast('Data buku besar tidak ditemukan', 'error');
@@ -1497,7 +1492,7 @@ function exportLedgerExcel() {
 // Export Ledger to PDF
 function exportLedgerPDF() {
   try {
-    console.log('📊 [EXPORT] Starting Ledger PDF export...');
+    console.log('[EXPORT] Starting Ledger PDF export...');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4'); // portrait
     
@@ -1597,7 +1592,7 @@ function exportLedgerPDF() {
 // Export Trial Balance to Excel
 function exportTrialBalanceExcel() {
   try {
-    console.log('📊 [EXPORT] Starting Trial Balance Excel export...');
+    console.log('[EXPORT] Starting Trial Balance Excel export...');
     const table = document.getElementById('trialBalanceTable');
     if (!table) {
       showToast('Tabel neraca saldo tidak ditemukan', 'error');
@@ -1632,7 +1627,7 @@ function exportTrialBalanceExcel() {
 // Export Trial Balance to PDF
 function exportTrialBalancePDF() {
   try {
-    console.log('📊 [EXPORT] Starting Trial Balance PDF export...');
+    console.log('[EXPORT] Starting Trial Balance PDF export...');
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4'); // portrait
     
