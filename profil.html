@@ -273,12 +273,12 @@
             </div>
             <div class="mt-4 text-center">
               <div class="flex items-center justify-center space-x-2">
-                <h2 id="userName" class="text-xl font-semibold">John Doe</h2>
+                <h2 id="userName" class="text-xl font-semibold">Nama</h2>
                 <button onclick="editName()" class="text-primary hover:text-primary/80">
                   <span class="material-icons text-sm">edit</span>
                 </button>
               </div>
-              <p id="userEmail" class="text-gray-500">john@example.com</p>
+              <p id="userEmail" class="text-gray-500">nama@example.com</p>
               <p id="userRole" class="text-sm text-gray-500 mt-1">Administrator</p>
               <div class="flex items-center justify-center space-x-2 mt-1">
                 <p id="joinDate" class="text-sm text-gray-500">Bergabung sejak Januari 2024</p>
@@ -291,12 +291,146 @@
         </div>
       </div>
 
-      <!-- Preferences -->
-      <div class="lg:col-span-2">
+      <!-- Informasi Akun & Informasi Usaha -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- 1. Informasi Akun -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-          <div class="space-y-6">
+          <h3 class="text-lg font-semibold mb-4">1. Informasi Akun</h3>
+          <p class="text-gray-500 mb-4">Bagian ini berfungsi untuk menampilkan serta memperbarui data dasar pengguna.</p>
+          
+          <div class="space-y-4">
             <div>
-              <h3 class="text-lg font-semibold mb-4" data-translate="preferences">Preferensi</h3>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+              <div class="flex items-center">
+                <input type="text" id="fullName" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan nama lengkap">
+                <button onclick="updateAccountInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <div class="flex items-center">
+                <input type="email" id="email" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan email">
+                <button onclick="updateAccountInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
+              <div class="flex items-center">
+                <input type="tel" id="phone" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan nomor telepon">
+                <button onclick="updateAccountInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <div class="flex items-center">
+                <input type="text" id="username" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan username">
+                <button onclick="updateAccountInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Informasi Usaha -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h3 class="text-lg font-semibold mb-4">2. Informasi Usaha</h3>
+          <p class="text-gray-500 mb-4">Bagian ini memuat data yang berhubungan dengan identitas usaha pengguna.</p>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nama Usaha</label>
+              <div class="flex items-center">
+                <input type="text" id="businessName" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan nama usaha">
+                <button onclick="updateBusinessInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Usaha</label>
+              <div class="flex items-center">
+                <select id="businessType" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                  <option value="">Pilih jenis usaha</option>
+                  <option value="perorangan">Perorangan</option>
+                  <option value="cv">CV (Commanditaire Vennootschap)</option>
+                  <option value="pt">PT (Perseroan Terbatas)</option>
+                  <option value="firma">Firma</option>
+                  <option value="koperasi">Koperasi</option>
+                  <option value="lainnya">Lainnya</option>
+                </select>
+                <button onclick="updateBusinessInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Usaha</label>
+              <div class="flex items-center">
+                <textarea id="businessAddress" rows="2" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan alamat usaha"></textarea>
+                <button onclick="updateBusinessInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nomor NPWP (opsional)</label>
+              <div class="flex items-center">
+                <input type="text" id="npwp" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Masukkan nomor NPWP">
+                <button onclick="updateBusinessInfo()" class="ml-2 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                  <span class="material-icons text-sm">save</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Pengaturan Akun -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h3 class="text-lg font-semibold mb-4">3. Pengaturan Akun</h3>
+          <p class="text-gray-500 mb-4">Fitur yang memungkinkan pengguna mengatur akun sesuai kebutuhan.</p>
+          
+          <div class="space-y-4">
+            <!-- Ubah Password -->
+            <div>
+              <h4 class="text-md font-medium text-gray-700 mb-2">Ubah Password</h4>
+              <div class="space-y-3">
+                <input type="password" id="currentPassword" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Password saat ini">
+                <input type="password" id="newPassword" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Password baru">
+                <input type="password" id="confirmPassword" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Konfirmasi password baru">
+                <button onclick="changePassword()" class="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                  Ubah Password
+                </button>
+              </div>
+            </div>
+            
+            <!-- Upload Foto Profil -->
+            <div>
+              <h4 class="text-md font-medium text-gray-700 mb-2">Upload Foto Profil atau Logo Usaha</h4>
+              <div class="flex items-center space-x-4">
+                <label for="profileImageUpload" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors cursor-pointer">
+                  Pilih File
+                </label>
+                <input type="file" id="profileImageUpload" accept="image/*" class="hidden" onchange="uploadProfileImage(event)">
+                <span id="fileName" class="text-sm text-gray-500">Belum ada file dipilih</span>
+              </div>
+            </div>
+            
+            <!-- Preferensi -->
+            <div>
+              <h4 class="text-md font-medium text-gray-700 mb-2">Preferensi</h4>
               <div class="space-y-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1" data-translate="language">Bahasa</label>
@@ -486,6 +620,18 @@
           document.getElementById('profileImage').src = currentUser.profileImage;
         }
 
+        // Set account information
+        document.getElementById('fullName').value = currentUser.fullName || '';
+        document.getElementById('email').value = currentUser.email || '';
+        document.getElementById('phone').value = currentUser.phone || '';
+        document.getElementById('username').value = currentUser.username || '';
+
+        // Set business information
+        document.getElementById('businessName').value = currentUser.businessName || '';
+        document.getElementById('businessType').value = currentUser.businessType || '';
+        document.getElementById('businessAddress').value = currentUser.businessAddress || '';
+        document.getElementById('npwp').value = currentUser.npwp || '';
+
         // Load preferences from localStorage (local settings)
         const preferences = JSON.parse(localStorage.getItem('userPreferences')) || {};
 
@@ -514,6 +660,78 @@
         };
         reader.readAsDataURL(file);
       }
+    }
+
+    // Upload profile image
+    function uploadProfileImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('fileName').textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const user = JSON.parse(localStorage.getItem('currentUser')) || {};
+          user.profileImage = e.target.result;
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          document.getElementById('profileImage').src = e.target.result;
+          showNotification('Foto profil berhasil diunggah', 'success');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Update account information
+    function updateAccountInfo() {
+      const user = JSON.parse(localStorage.getItem('currentUser')) || {};
+      
+      user.fullName = document.getElementById('fullName').value;
+      user.email = document.getElementById('email').value;
+      user.phone = document.getElementById('phone').value;
+      user.username = document.getElementById('username').value;
+      
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      showNotification('Informasi akun berhasil diperbarui', 'success');
+    }
+
+    // Update business information
+    function updateBusinessInfo() {
+      const user = JSON.parse(localStorage.getItem('currentUser')) || {};
+      
+      user.businessName = document.getElementById('businessName').value;
+      user.businessType = document.getElementById('businessType').value;
+      user.businessAddress = document.getElementById('businessAddress').value;
+      user.npwp = document.getElementById('npwp').value;
+      
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      showNotification('Informasi usaha berhasil diperbarui', 'success');
+    }
+
+    // Change password
+    function changePassword() {
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showNotification('Semua field password harus diisi', 'error');
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        showNotification('Password baru dan konfirmasi password tidak cocok', 'error');
+        return;
+      }
+      
+      // Simulasi perubahan password (dalam aplikasi nyata, ini akan mengirim ke server)
+      showLoading();
+      setTimeout(() => {
+        hideLoading();
+        showNotification('Password berhasil diubah', 'success');
+        
+        // Reset form
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+      }, 1500);
     }
 
     // PERBAIKAN #4: Fungsi preferensi yang konsisten dan tema yang benar
