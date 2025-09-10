@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Penggunaan - KeuTrack</title>
+    <link rel="icon" type="image/svg+xml" href="./Images/logo.svg">
+    <script src="https://cdn.tailwindcss.com/3.4.0"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script>
+        // Konfigurasi Tailwind untuk konsisten dengan dashboard
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Source Sans Pro', 'sans-serif'] },
+                    colors: { primary: '#2c3e50', success: '#10B981', danger: '#EF4444' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .guide-section {
+            scroll-margin-top: 6rem;
+        }
+
+        @media (max-width: 768px) {
+            .guide-section {
+                scroll-margin-top: 4.5rem;
+            }
+
+            /* Mobile menu styles matching dashboard */
+            .mobile-menu {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                width: 80% !important;
+                max-width: 300px;
+            }
+
+            .mobile-menu.active {
+                transform: translateX(0);
+                box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+            }
+
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 30;
+            }
+
+            .mobile-overlay.active {
+                display: block;
+            }
+        }
+
+        .step-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 font-sans">
+    <!-- Mobile Header -->
+    <header
+        class="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white p-4 z-50">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button id="mobileMenuButton" class="text-white">
+                    <span class="material-icons">menu</span>
+                </button>
+                <img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-8 h-8">
+                <span class="text-xl font-semibold">Panduan KeuTrack</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Overlay untuk mobile menu -->
+    <div id="mobileOverlay" class="mobile-overlay"></div>
+
+    <!-- Sidebar -->
+    <aside
+        class="fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50] text-white mobile-menu lg:translate-x-0 z-40">
+        <div class="p-6 hidden lg:block">
+            <div class="flex items-center space-x-1">
+                <img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-[70px] h-[70px]">
+                <span class="text-2xl font-semibold pt-2.5">KeuTrack</span>
+            </div>
+        </div>
+        <nav class="mt-20 lg:mt-6">
+            <ul class="space-y-2 px-4">
+                <li>
+                    <a href="dashboard.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                        <span class="material-icons">analytics</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="akun.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                        <span class="material-icons">account_balance</span>
+                        <span>Pengelolaan Akun</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="transaksi.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                        <span class="material-icons">swap_horiz</span>
+                        <span>Transaksi</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="siklus_akuntansi.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                        <span class="material-icons">account_tree</span>
+                        <span>Siklus Akuntansi</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="laporankeuangan.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                        <span class="material-icons">summarize</span>
+                        <span>Laporan Keuangan</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="panduan.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/20 transition-colors">
+                        <span class="material-icons">book</span>
+                        <span>Panduan Penggunaan</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="profil.html"
+                        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                        <span class="material-icons">person</span>
+                        <span>Profil</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="absolute bottom-0 w-full p-4">
+            <button id="logoutButton"
+                class="flex items-center space-x-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <span class="material-icons">logout</span>
+                <span>Log Out</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 p-5 lg:p-6 pt-20 lg:pt-6">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white rounded-xl p-6 mb-6">
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start space-y-4 lg:space-y-0">
+                <div>
+                    <h1 class="text-xl lg:text-2xl font-semibold">Panduan Penggunaan KeuTrack</h1>
+                    <p class="text-white/80 mt-1 text-sm lg:text-base">Pelajari cara menggunakan semua fitur KeuTrack
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daftar Isi -->
+        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Daftar Isi</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <a href="#menu-utama"
+                    class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <span class="material-icons text-primary mr-3">menu</span>
+                    <span class="text-sm lg:text-base">Menu Utama KeuTrack</span>
+                </a>
+                <a href="#tambah-akun"
+                    class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <span class="material-icons text-primary mr-3">add_circle</span>
+                    <span class="text-sm lg:text-base">Menambahkan Nama Akun</span>
+                </a>
+                <a href="#transaksi"
+                    class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <span class="material-icons text-primary mr-3">swap_horiz</span>
+                    <span class="text-sm lg:text-base">Mencatat Transaksi</span>
+                </a>
+                <a href="#siklus"
+                    class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <span class="material-icons text-primary mr-3">account_tree</span>
+                    <span class="text-sm lg:text-base">Siklus Akuntansi</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Menu Utama -->
+        <div id="menu-utama" class="guide-section bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="material-icons text-primary mr-2">menu</span>
+                Menu Utama KeuTrack
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="step-card bg-gray-50 rounded-lg p-5 border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <span class="material-icons text-primary">analytics</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 text-base lg:text-lg">Dashboard</h3>
+                    </div>
+                    <p class="text-gray-600 text-xs lg:text-sm">Menampilkan ringkasan transaksi, saldo, dan informasi penting lain
+                        sebagai gambaran umum keuangan.</p>
+                </div>
+
+                <div class="step-card bg-gray-50 rounded-lg p-5 border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <span class="material-icons text-primary">account_balance</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 text-base lg:text-lg">Pengelolaan Akun</h3>
+                    </div>
+                    <p class="text-gray-600 text-xs lg:text-sm">Menu untuk menambahkan dan mengelola nama akun akuntansi.</p>
+                </div>
+
+                <div class="step-card bg-gray-50 rounded-lg p-5 border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <span class="material-icons text-primary">swap_horiz</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 text-base lg:text-lg">Transaksi</h3>
+                    </div>
+                    <p class="text-gray-600 text-xs lg:text-sm">Fitur untuk menambahkan transaksi, yang sudah dikelola dalam daftar
+                        akun.</p>
+                </div>
+
+                <div class="step-card bg-gray-50 rounded-lg p-5 border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <span class="material-icons text-primary">account_tree</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 text-base lg:text-lg">Siklus Akuntansi</h3>
+                    </div>
+                    <p class="text-gray-600 text-xs lg:text-sm">Menu untuk menghasilkan proses akuntansi, mulai dari Jurnal Umum,
+                        Buku Besar, dan Neraca Saldo.</p>
+                </div>
+
+                <div class="step-card bg-gray-50 rounded-lg p-5 border border-gray-200">
+                    <div class="flex items-center mb-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                            <span class="material-icons text-primary">summarize</span>
+                        </div>
+                        <h3 class="font-semibold text-gray-800 text-base lg:text-lg">Laporan Keuangan</h3>
+                    </div>
+                    <p class="text-gray-600 text-xs lg:text-sm">Menu untuk menghasilkan laporan keuangan (laporan laba rugi dan
+                        neraca) secara otomatis.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menambahkan Nama Akun -->
+        <div id="tambah-akun" class="guide-section bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="material-icons text-primary mr-2">add_circle</span>
+                Menambahkan Nama Akun
+            </h2>
+
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">1.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Masuk ke menu Pengelolaan Akun</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Buka sidebar navigasi dan pilih opsi "Pengelolaan Akun".</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">2.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Pilih nama akun yang akan digunakan</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Gunakan daftar akun default atau tambahkan akun baru sesuai kebutuhan
+                            bisnis Anda.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">3.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Isi nominal akun (opsional)</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Untuk akun yang sudah memiliki saldo awal, isikan nominal saldo
+                            tersebut.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mencatat Transaksi -->
+        <div id="transaksi" class="guide-section bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="material-icons text-primary mr-2">swap_horiz</span>
+                Mencatat Transaksi
+            </h2>
+
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">1.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Masuk ke menu Transaksi</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Buka sidebar navigasi dan pilih opsi "Transaksi".</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">2.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Isi semua kolom yang ada di Transaksi</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Pastikan semua field terisi dengan data yang valid.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">3.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Pilih Debit/Kredit sesuai transaksi</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Contoh: "Modal 50.000.000 disetorkan ke Kas perusahaan" - Kas (Debit),
+                            Modal (Kredit).</p>
+                        <div class="bg-blue-50 p-4 rounded-lg mt-2">
+                            <p class="text-xs lg:text-sm text-blue-700 font-medium">Kas bertambah (Debit) dan Modal berkurang
+                                (Kredit)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">4.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Isi nominal transaksi</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Masukkan jumlah nominal transaksi dengan benar.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="text-primary font-bold text-lg">5.</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Klik/Tap "Tambahkan Transaksi"</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Transaksi akan tersimpan dan secara otomatis mempengaruhi laporan di
+                            Siklus Akuntansi dan Laporan Keuangan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contoh Transaksi -->
+        <div class="bg-blue-50 rounded-lg p-6 mb-8">
+            <h3 class="text-lg lg:text-xl font-semibold text-blue-800 mb-4 flex items-center">
+                <span class="material-icons text-blue-600 mr-2">lightbulb</span>
+                Contoh Transaksi
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h4 class="font-medium text-gray-800 mb-2 text-base lg:text-lg">Pembelian perlengkapan usaha (Beban Perlengkapan) secara
+                        tunai</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm lg:text-base">Beban Perlengkapan (Debit)</span>
+                            <span class="text-green-600 text-sm lg:text-base"> Rp 5.000.000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm lg:text-base">Kas (Kredit)</span>
+                            <span class="text-red-600 text-sm lg:text-base"> Rp 5.000.000</span>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-gray-200">
+                            <span class="text-xs lg:text-sm text-gray-600">Kalau usaha membeli perlengkapan dan langsung dibayar
+                                dengan uang kas, berarti ada biaya (beban) yang muncul. Biaya itu dicatat di debit
+                                karena menambah pengeluaran usaha. Sementara kas berkurang karena dipakai membayar,
+                                sehingga dicatat di kredit.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-lg shadow-sm">
+                    <h4 class="font-medium text-gray-800 mb-2 text-base lg:text-lg">Menjual barang A (Pendapatan)</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm lg:text-base">Pendapatan (Kredit)</span>
+                            <span class="text-green-600 text-sm lg:text-base">+ Rp 1.500.000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm lg:text-base">Kas (Debit)</span>
+                            <span class="text-green-600 text-sm lg:text-base">+ Rp 1.500.000</span>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-gray-200">
+                            <span class="text-xs lg:text-sm text-gray-600">Kalau usaha menerima uang dari penjualan, berarti kas
+                                bertambah. Kas dicatat di debit karena menunjukkan apa yang diterima. Sementara itu,
+                                pendapatan dicatat di kredit karena itu sumber dari bertambahnya kas.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Siklus Akuntansi -->
+        <div id="siklus" class="guide-section bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <span class="material-icons text-primary mr-2">account_tree</span>
+                Siklus Akuntansi
+            </h2>
+
+            <div class="bg-gray-50 rounded-lg p-5 mb-6">
+                <p class="text-gray-700 text-sm lg:text-base">KeuTrack secara otomatis mengelola seluruh siklus akuntansi berdasarkan
+                    transaksi yang Anda input:</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="material-icons text-primary text-xl">description</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Jurnal Umum</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Semua transaksi secara otomatis tercatat dalam jurnal umum yang dapat
+                            diakses melalui menu Siklus Akuntansi.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="material-icons text-primary text-xl">library_books</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Buku Besar</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Setiap akun memiliki buku besar sendiri yang mencatat semua transaksi
+                            terkait akun tersebut.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="material-icons text-primary text-xl">scale</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Neraca Saldo</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Sistem secara otomatis menghasilkan neraca saldo untuk memastikan
+                            keseimbangan antara debit dan kredit.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-4 mt-1">
+                        <span class="material-icons text-primary text-xl">pie_chart</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2 text-base lg:text-lg">Laporan Keuangan</h3>
+                        <p class="text-gray-600 text-sm lg:text-base">Laporan Laba Rugi dan Neraca dihasilkan secara otomatis berdasarkan
+                            data transaksi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-gray-500 text-sm py-8">
+            <p>© 2025 KeuTrack</p>
+        </div>
+
+        <script>
+            // Mobile menu functionality
+            const mobileMenuButton = document.getElementById('mobileMenuButton');
+            const mobileMenu = document.querySelector('.mobile-menu');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+
+            function toggleMobileMenu() {
+                mobileMenu.classList.toggle("active");
+                mobileOverlay.classList.toggle("active");
+                document.body.style.overflow = mobileMenu.classList.contains("active") ? "hidden" : "";
+            }
+
+            function closeMobileMenu() {
+                mobileMenu.classList.remove("active");
+                mobileOverlay.classList.remove("active");
+                document.body.style.overflow = "";
+            }
+
+            if (mobileMenuButton && mobileMenu && mobileOverlay) {
+                mobileMenuButton.addEventListener("click", toggleMobileMenu);
+                mobileOverlay.addEventListener("click", closeMobileMenu);
+
+                // Close menu ketika link di klik
+                document.querySelectorAll('.mobile-menu a').forEach(link => {
+                    link.addEventListener('click', closeMobileMenu);
+                });
+            }
+
+            // Smooth scrolling untuk anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        // Close mobile menu jika terbuka
+                        if (mobileMenu.classList.contains("active")) {
+                            closeMobileMenu();
+                        }
+
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Logout functionality
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', () => {
+                    if (confirm('Apakah Anda yakin ingin keluar?')) {
+                        localStorage.removeItem('currentUser');
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
+
+            // Highlight section saat di-scroll
+            const sections = document.querySelectorAll('.guide-section');
+            const navLinks = document.querySelectorAll('a[href^="#"]');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (pageYOffset >= (sectionTop - 100)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('bg-gray-100');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('bg-gray-100');
+                    }
+                });
+            });
+        </script>
+</body>
+
+</html>
