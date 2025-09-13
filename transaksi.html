@@ -7,7 +7,7 @@
   <title>KeuTrack - Manajemen Transaksi</title>
   <link rel="icon" type="image/svg+xml" href="./Images/logo.svg">
   <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap"
     rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <script src="js/api.js"></script>
@@ -16,17 +16,17 @@
     // Suppress Tailwind CSS production warning - Enhanced version
     if (typeof window !== 'undefined' && window.console && window.console.warn) {
       const originalWarn = console.warn;
-      console.warn = function(...args) {
+      console.warn = function (...args) {
         if (args[0] && typeof args[0] === 'string') {
-          if (args[0].includes('should not be used in production') || 
-              args[0].includes('cdn.tailwindcss.com')) {
+          if (args[0].includes('should not be used in production') ||
+            args[0].includes('cdn.tailwindcss.com')) {
             return; // Suppress Tailwind production warnings
           }
         }
         originalWarn.apply(console, args);
       };
     }
-    
+
     tailwind.config = {
       theme: {
         extend: {
@@ -197,7 +197,7 @@
   <div id="mobileOverlay" class="mobile-overlay"></div>
 
   <!-- Mobile Header -->
-<div class="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white p-4 z-50">
+  <div class="lg:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white p-4 z-50">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-1">
         <button id="mobileMenuButton" class="text-white">
@@ -210,7 +210,8 @@
   </div>
 
   <!-- Sidebar -->
-  <div class="fixed inset-y-0 left-0 w-64 bg-primary text-white mobile-menu lg:translate-x-0 z-40 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50]">
+  <div
+    class="fixed inset-y-0 left-0 w-64 bg-primary text-white mobile-menu lg:translate-x-0 z-40 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50]">
     <div class="p-6 hidden lg:block">
       <div class="flex items-center space-x-1">
         <img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-[70px] h-[70px]">
@@ -234,7 +235,8 @@
           </a>
         </li>
         <li>
-          <a href="transaksi.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/10 transition-colors">
+          <a href="transaksi.html"
+            class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/10 transition-colors">
             <span class="material-icons">swap_horiz</span>
             <span>Transaksi</span>
           </a>
@@ -267,7 +269,7 @@
             <span>Profil</span>
           </a>
         </li>
-        
+
       </ul>
     </nav>
     <div class="absolute bottom-0 w-full p-4">
@@ -504,6 +506,52 @@
   </div>
 
   <script>
+    
+    // ==================== ENHANCED API HANDLER ====================
+    class EnhancedAPI {
+      constructor() {
+        this.maxRetries = 3;
+        this.retryDelay = 1000;
+        this.isConnected = false;
+      }
+
+      async call(apiFunction, ...args) {
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+          try {
+            console.log(`🌐 [ENHANCED] Attempt ${attempt}/${this.maxRetries} - ${apiFunction.name}`);
+
+            if (!window.KeuTrackAPI || typeof window.KeuTrackAPI[apiFunction.name] !== 'function') {
+              throw new Error(`API function ${apiFunction.name} not available`);
+            }
+
+            const result = await window.KeuTrackAPI[apiFunction.name](...args);
+            this.isConnected = true;
+            return result;
+
+          } catch (error) {
+            lastError = error;
+            console.error(`❌ [ENHANCED] Attempt ${attempt} failed:`, error.message);
+
+            if (attempt === this.maxRetries) break;
+            await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
+          }
+        }
+
+        this.isConnected = false;
+        throw lastError;
+      }
+
+      showLoading(show, message = 'Memuat...') {
+        console.log(`📊 Loading: ${show ? 'SHOW' : 'HIDE'} - ${message}`);
+      }
+    }
+
+    // Initialize enhanced API
+    window.EnhancedAPI = new EnhancedAPI();
+
+
     // Variabel global untuk menyimpan data
     let accounts = [];
     let transactions = [];
@@ -693,13 +741,13 @@
         const creditName = creditAccount ? creditAccount.name : 'Akun tidak ditemukan';
         const debitCode = debitAccount ? (debitAccount.code ?? '') : '';
         const creditCode = creditAccount ? (creditAccount.code ?? '') : '';
-        
+
         // Fix date parsing - use transaction_date from API or date from local
         const transactionDate = new Date(transaction.transaction_date || transaction.date || Date.now());
         const tgl = String(transactionDate.getDate()).padStart(2, '0');
         const bln = String(transactionDate.getMonth() + 1).padStart(2, '0');
         const thn = String(transactionDate.getFullYear());
-        
+
         const unitPrice = Number(transaction.unitPrice || 0);
         const quantity = Number(transaction.quantity || 0);
 
@@ -810,7 +858,7 @@
         console.log('✅ [TRANSAKSI] Transaction added successfully');
         showToast('✅ Transaksi berhasil ditambahkan', 'success');
         document.getElementById('transactionForm').reset();
-        
+
         // Refresh accounts and transactions after adding
         await loadAccounts();
         await loadTransactions();
@@ -834,7 +882,7 @@
         showToast('Transaksi tidak ditemukan', 'error');
         return;
       }
-      
+
       console.log('✅ [EDIT] Transaction found:', trx.description || 'No description');
       editingTransactionId = transactionId;
 
@@ -888,7 +936,7 @@
         showToast('Transaksi tidak ditemukan', 'error');
         return;
       }
-      
+
       console.log('✅ [DELETE] Transaction found:', trx.description || 'No description');
       deletingTransactionId = transactionId;
       document.getElementById('deleteTransactionMessage').textContent = 'Apakah Anda yakin ingin menghapus transaksi ini?';
@@ -935,7 +983,7 @@
         console.log('✅ [TRANSAKSI] Transaction deleted successfully');
         showToast('✅ Transaksi berhasil dihapus', 'success');
         closeDeleteTransactionModal();
-        
+
         // Refresh accounts and transactions after deletion
         await loadAccounts();
         await loadTransactions();
@@ -985,7 +1033,7 @@
         console.log('✅ [TRANSAKSI] All transactions deleted successfully');
         showToast('✅ Semua transaksi berhasil dihapus', 'success');
         closeDeleteAllTransactionsModal();
-        
+
         // Refresh accounts and transactions after deletion
         await loadAccounts();
         await loadTransactions();
@@ -1171,7 +1219,7 @@
 
           showToast('Transaksi berhasil diupdate', 'success');
           closeEditTransactionModal();
-          
+
           // Refresh accounts and transactions after update
           loadAccounts();
           loadTransactions();
@@ -1204,7 +1252,7 @@
       window.confirmDeleteTransaction = confirmDeleteTransaction;
       window.closeDeleteAllTransactionsModal = closeDeleteAllTransactionsModal;
       window.confirmDeleteAllTransactions = confirmDeleteAllTransactions;
-      
+
       // Debug: Log exposed functions
       console.log('🔧 [TRANSAKSI PAGE] Functions exposed to global scope:');
       console.log('  - onEditTransaction:', typeof window.onEditTransaction);

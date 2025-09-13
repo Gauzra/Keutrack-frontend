@@ -174,7 +174,8 @@
   </div>
 
   <!-- Sidebar -->
-  <div class="fixed inset-y-0 left-0 w-64 text-white mobile-menu lg:translate-x-0 z-40 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50]">
+  <div
+    class="fixed inset-y-0 left-0 w-64 text-white mobile-menu lg:translate-x-0 z-40 bg-gradient-to-b from-[#1E2A38] to-[#2C3E50]">
     <div class="p-6 hidden lg:block">
       <div class="flex items-center space-x-1">
         <img src="./Images/logo.svg" alt="KeuTrack Logo" class="w-[70px] h-[70px]">
@@ -191,8 +192,7 @@
           </a>
         </li>
         <li>
-          <a href="akun.html"
-            class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/10 transition-colors">
+          <a href="akun.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/10 transition-colors">
             <span class="material-icons">account_balance</span>
             <span>Pengelolaan Akun</span>
           </a>
@@ -218,7 +218,7 @@
             <span>Laporan Keuangan</span>
           </a>
         </li>
-         <li><a href="panduan.html"
+        <li><a href="panduan.html"
             class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
             <span class="material-icons">book</span>
             <span>Panduan Penggunaan</span>
@@ -245,7 +245,7 @@
   <!-- Main Content -->
   <div class="lg:ml-64 p-4 lg:p-8 mt-16 lg:mt-0">
     <!-- Header -->
-   <div class="bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white rounded-lg p-6 mb-8">
+    <div class="bg-gradient-to-r from-[#1E2A38] to-[#2C3E50] text-white rounded-lg p-6 mb-8">
       <div>
         <h1 class="text-2xl font-semibold">Pengelolaan Akun</h1>
         <p class="text-white/80 mt-1">Kelola dan atur akun keuangan</p>
@@ -365,7 +365,7 @@
 
             <div id="defaultKasBalanceInput" class="hidden">
               <label for="defaultAccountBalance" class="block text-sm font-medium text-gray-700 mb-1">Saldo Awal (Rp)
-              Opsional </label>
+                Opsional </label>
               <input type="text" id="defaultAccountBalance" inputmode="numeric" placeholder="0"
                 class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-right">
             </div>
@@ -487,25 +487,67 @@
     </div>
   </div>
 
-    <script>
+  <script>
+    // ==================== ENHANCED API HANDLER ====================
+    class EnhancedAPI {
+      constructor() {
+        this.maxRetries = 3;
+        this.retryDelay = 1000;
+        this.isConnected = false;
+      }
 
+      async call(apiFunction, ...args) {
+        let lastError = null;
 
-      let accounts = [];
-      let selectedDefaultAccount = '';
-      let selectedDefaultAccountData = null; // Store complete account data
-      let editingAccountId = null;
-      let deletingAccountId = null;
-      let defaultAccounts = []; // Store default accounts from backend
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+          try {
+            console.log(`🌐 [ENHANCED] Attempt ${attempt}/${this.maxRetries} - ${apiFunction.name}`);
 
-      // Toast Notification System
-      function showToast(message, type = 'info') {
-        const toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) return;
+            if (!window.KeuTrackAPI || typeof window.KeuTrackAPI[apiFunction.name] !== 'function') {
+              throw new Error(`API function ${apiFunction.name} not available`);
+            }
 
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `
+            const result = await window.KeuTrackAPI[apiFunction.name](...args);
+            this.isConnected = true;
+            return result;
+
+          } catch (error) {
+            lastError = error;
+            console.error(`❌ [ENHANCED] Attempt ${attempt} failed:`, error.message);
+
+            if (attempt === this.maxRetries) break;
+            await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
+          }
+        }
+
+        this.isConnected = false;
+        throw lastError;
+      }
+
+      showLoading(show, message = 'Memuat...') {
+        console.log(`📊 Loading: ${show ? 'SHOW' : 'HIDE'} - ${message}`);
+      }
+    }
+
+    // Initialize enhanced API
+    window.EnhancedAPI = new EnhancedAPI();
+
+    let accounts = [];
+    let selectedDefaultAccount = '';
+    let selectedDefaultAccountData = null; // Store complete account data
+    let editingAccountId = null;
+    let deletingAccountId = null;
+    let defaultAccounts = []; // Store default accounts from backend
+
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+      const toastContainer = document.getElementById('toastContainer');
+      if (!toastContainer) return;
+
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
           <div class="toast-content">
             <div class="toast-icon">
               <span class="material-icons">${getToastIcon(type)}</span>
@@ -517,223 +559,223 @@
           </div>
         `;
 
-        toastContainer.appendChild(toast);
+      toastContainer.appendChild(toast);
 
-        // Show toast with animation
-        setTimeout(() => toast.classList.add('show'), 100);
+      // Show toast with animation
+      setTimeout(() => toast.classList.add('show'), 100);
 
-        // Auto close after 5 seconds
-        setTimeout(() => closeToast(toast.querySelector('.toast-close')), 5000);
+      // Auto close after 5 seconds
+      setTimeout(() => closeToast(toast.querySelector('.toast-close')), 5000);
+    }
+
+    function getToastIcon(type) {
+      const icons = {
+        'success': 'check_circle',
+        'error': 'error',
+        'warning': 'warning',
+        'info': 'info'
+      };
+      return icons[type] || 'info';
+    }
+
+    function closeToast(button) {
+      const toast = button.closest('.toast');
+      if (toast) {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }
+
+    function generateAccountCode() {
+      //  [IMPROVED] Generate SAK EMKM-style codes when creating custom accounts
+
+      const maxCode = accounts.reduce((max, account) => {
+        const codeNum = parseInt(account.code || '0');
+        return Math.max(max, codeNum);
+      }, 0);
+
+      // If we have existing accounts, increment from max
+      if (maxCode > 0) {
+        return String(maxCode + 1);
       }
 
-      function getToastIcon(type) {
-        const icons = {
-          'success': 'check_circle',
-          'error': 'error',
-          'warning': 'warning',
-          'info': 'info'
-        };
-        return icons[type] || 'info';
-      }
+      // If no accounts exist, start with 1001 (SAK EMKM style)
+      return '1001';
+    }
 
-      function closeToast(button) {
-        const toast = button.closest('.toast');
-        if (toast) {
-          toast.classList.remove('show');
-          setTimeout(() => toast.remove(), 300);
-        }
-      }
+    function formatRupiah(number) {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+      }).format(number || 0);
+    }
 
-      function generateAccountCode() {
-        //  [IMPROVED] Generate SAK EMKM-style codes when creating custom accounts
+    // Format input nominal saat mengetik: 10000 -> 10.000
+    function formatNumberGrouping(value) {
+      const digits = (value || '').toString().replace(/\D+/g, '');
+      if (!digits) return '';
+      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
 
-        const maxCode = accounts.reduce((max, account) => {
-          const codeNum = parseInt(account.code || '0');
-          return Math.max(max, codeNum);
-        }, 0);
+    function parseGroupedNumber(value) {
+      const digits = (value || '').toString().replace(/\D+/g, '');
+      return parseFloat(digits || '0');
+    }
 
-        // If we have existing accounts, increment from max
-        if (maxCode > 0) {
-          return String(maxCode + 1);
-        }
+    function formatDate(dateString) {
+      if (!dateString) return '-';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
 
-        // If no accounts exist, start with 1001 (SAK EMKM style)
-        return '1001';
-      }
+    async function loadDefaultAccounts() {
+      try {
+        console.log('📋 [DEFAULT-ACCOUNTS] Loading default accounts from API...');
 
-      function formatRupiah(number) {
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          minimumFractionDigits: 0
-        }).format(number || 0);
-      }
-
-      // Format input nominal saat mengetik: 10000 -> 10.000
-      function formatNumberGrouping(value) {
-        const digits = (value || '').toString().replace(/\D+/g, '');
-        if (!digits) return '';
-        return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      }
-
-      function parseGroupedNumber(value) {
-        const digits = (value || '').toString().replace(/\D+/g, '');
-        return parseFloat(digits || '0');
-      }
-
-      function formatDate(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        });
-      }
-
-      async function loadDefaultAccounts() {
-        try {
-          console.log('📋 [DEFAULT-ACCOUNTS] Loading default accounts from API...');
-
-          // Check if API is available
-          if (!window.KeuTrackAPI) {
-            console.warn('⚠️ [DEFAULT-ACCOUNTS] API not available, using fallback');
-            populateDefaultAccountsDropdown({});
-            return;
-          }
-
-          // Check if getDefaultAccounts method exists
-          if (typeof window.KeuTrackAPI.getDefaultAccounts !== 'function') {
-            console.error('❌ [DEFAULT-ACCOUNTS] getDefaultAccounts method not found');
-            console.log('🔍 [DEBUG] Available API methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.KeuTrackAPI)));
-            populateDefaultAccountsDropdown({});
-            return;
-          }
-
-          console.log('✅ [DEFAULT-ACCOUNTS] API and method available, calling getDefaultAccounts...');
-          const response = await window.KeuTrackAPI.getDefaultAccounts();
-          console.log('📋 [DEFAULT-ACCOUNTS] Response received:', response);
-
-          if (!response || !response.success || !response.defaultAccounts) {
-            console.error('❌ [DEFAULT-ACCOUNTS] Invalid response:', response);
-            populateDefaultAccountsDropdown({});
-            return;
-          }
-
-          defaultAccounts = response.defaultAccounts;
-          console.log(`✅ [DEFAULT-ACCOUNTS] Loaded ${defaultAccounts.length} default accounts`);
-
-          // Populate dropdown with dynamic accounts
-          populateDefaultAccountsDropdown(response.groupedAccounts);
-
-        } catch (error) {
-          console.error('❌ [DEFAULT-ACCOUNTS] Error loading:', error);
-          console.error('❌ [DEFAULT-ACCOUNTS] Error stack:', error.stack);
-          // Show fallback message
+        // Check if API is available
+        if (!window.KeuTrackAPI) {
+          console.warn('⚠️ [DEFAULT-ACCOUNTS] API not available, using fallback');
           populateDefaultAccountsDropdown({});
+          return;
         }
+
+        // Check if getDefaultAccounts method exists
+        if (typeof window.KeuTrackAPI.getDefaultAccounts !== 'function') {
+          console.error('❌ [DEFAULT-ACCOUNTS] getDefaultAccounts method not found');
+          console.log('🔍 [DEBUG] Available API methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.KeuTrackAPI)));
+          populateDefaultAccountsDropdown({});
+          return;
+        }
+
+        console.log('✅ [DEFAULT-ACCOUNTS] API and method available, calling getDefaultAccounts...');
+        const response = await window.KeuTrackAPI.getDefaultAccounts();
+        console.log('📋 [DEFAULT-ACCOUNTS] Response received:', response);
+
+        if (!response || !response.success || !response.defaultAccounts) {
+          console.error('❌ [DEFAULT-ACCOUNTS] Invalid response:', response);
+          populateDefaultAccountsDropdown({});
+          return;
+        }
+
+        defaultAccounts = response.defaultAccounts;
+        console.log(`✅ [DEFAULT-ACCOUNTS] Loaded ${defaultAccounts.length} default accounts`);
+
+        // Populate dropdown with dynamic accounts
+        populateDefaultAccountsDropdown(response.groupedAccounts);
+
+      } catch (error) {
+        console.error('❌ [DEFAULT-ACCOUNTS] Error loading:', error);
+        console.error('❌ [DEFAULT-ACCOUNTS] Error stack:', error.stack);
+        // Show fallback message
+        populateDefaultAccountsDropdown({});
+      }
+    }
+
+    function populateDefaultAccountsDropdown(groupedAccounts) {
+      console.log('🔧 [DROPDOWN] Populating default accounts dropdown...');
+      console.log('🔧 [DROPDOWN] Grouped accounts received:', groupedAccounts);
+
+      const dynamicList = document.getElementById('dynamicAccountList');
+      if (!dynamicList) {
+        console.error('❌ [DROPDOWN] dynamicAccountList element not found');
+        return;
       }
 
-      function populateDefaultAccountsDropdown(groupedAccounts) {
-        console.log('🔧 [DROPDOWN] Populating default accounts dropdown...');
-        console.log('🔧 [DROPDOWN] Grouped accounts received:', groupedAccounts);
+      // Store all accounts for search functionality
+      window.allDefaultAccounts = [];
 
-        const dynamicList = document.getElementById('dynamicAccountList');
-        if (!dynamicList) {
-          console.error('❌ [DROPDOWN] dynamicAccountList element not found');
-          return;
-        }
+      // Check if groupedAccounts is valid
+      if (!groupedAccounts || typeof groupedAccounts !== 'object') {
+        console.warn('⚠️ [DROPDOWN] No grouped accounts data available');
+        updateAccountDisplay([]);
+        return;
+      }
 
-        // Store all accounts for search functionality
-        window.allDefaultAccounts = [];
-
-        // Check if groupedAccounts is valid
-        if (!groupedAccounts || typeof groupedAccounts !== 'object') {
-          console.warn('⚠️ [DROPDOWN] No grouped accounts data available');
-          updateAccountDisplay([]);
-          return;
-        }
-
-        // Flatten all accounts into a single array for easier searching
-        Object.keys(groupedAccounts).forEach(type => {
-          const accounts = groupedAccounts[type] || [];
-          accounts.forEach(account => {
-            window.allDefaultAccounts.push({
-              ...account,
-              type: type
-            });
+      // Flatten all accounts into a single array for easier searching
+      Object.keys(groupedAccounts).forEach(type => {
+        const accounts = groupedAccounts[type] || [];
+        accounts.forEach(account => {
+          window.allDefaultAccounts.push({
+            ...account,
+            type: type
           });
         });
+      });
 
-        console.log(`🔧 [DROPDOWN] Total accounts stored: ${window.allDefaultAccounts.length}`);
+      console.log(`🔧 [DROPDOWN] Total accounts stored: ${window.allDefaultAccounts.length}`);
 
-        // Display all accounts initially
-        updateAccountDisplay(window.allDefaultAccounts);
+      // Display all accounts initially
+      updateAccountDisplay(window.allDefaultAccounts);
 
-        // Initialize search functionality
-        initializeAccountSearch();
+      // Initialize search functionality
+      initializeAccountSearch();
+    }
+
+    function updateAccountDisplay(accountsToShow) {
+      const dynamicList = document.getElementById('dynamicAccountList');
+      const accountCounter = document.getElementById('accountCounter');
+      const noResultsMessage = document.getElementById('noResultsMessage');
+
+      // Update counter
+      if (accountCounter) {
+        accountCounter.textContent = `Menampilkan ${accountsToShow.length} dari ${window.allDefaultAccounts ? window.allDefaultAccounts.length : 0} akun`;
       }
 
-      function updateAccountDisplay(accountsToShow) {
-        const dynamicList = document.getElementById('dynamicAccountList');
-        const accountCounter = document.getElementById('accountCounter');
-        const noResultsMessage = document.getElementById('noResultsMessage');
-
-        // Update counter
-        if (accountCounter) {
-          accountCounter.textContent = `Menampilkan ${accountsToShow.length} dari ${window.allDefaultAccounts ? window.allDefaultAccounts.length : 0} akun`;
-        }
-
-        if (accountsToShow.length === 0) {
-          dynamicList.innerHTML = '';
-          if (noResultsMessage) {
-            noResultsMessage.classList.remove('hidden');
-          }
-          return;
-        }
-
+      if (accountsToShow.length === 0) {
+        dynamicList.innerHTML = '';
         if (noResultsMessage) {
-          noResultsMessage.classList.add('hidden');
+          noResultsMessage.classList.remove('hidden');
         }
+        return;
+      }
 
-        let html = '';
+      if (noResultsMessage) {
+        noResultsMessage.classList.add('hidden');
+      }
 
-        // Define account type labels and icons
-        const typeConfig = {
-          'ASET': { label: 'ASET', color: 'text-green-600' },
-          'LIABILITAS': { label: 'KEWAJIBAN', color: 'text-red-600' },
-          'EKUITAS': { label: 'EKUITAS', color: 'text-blue-600' },
-          'PENDAPATAN': { label: 'PENDAPATAN', color: 'text-emerald-600' },
-          'BEBAN': { label: 'BEBAN', color: 'text-amber-600' }
-        };
+      let html = '';
 
-        // Group accounts by type for display
-        const groupedForDisplay = {};
-        accountsToShow.forEach(account => {
-          if (!groupedForDisplay[account.type]) {
-            groupedForDisplay[account.type] = [];
-          }
-          groupedForDisplay[account.type].push(account);
-        });
+      // Define account type labels and icons
+      const typeConfig = {
+        'ASET': { label: 'ASET', color: 'text-green-600' },
+        'LIABILITAS': { label: 'KEWAJIBAN', color: 'text-red-600' },
+        'EKUITAS': { label: 'EKUITAS', color: 'text-blue-600' },
+        'PENDAPATAN': { label: 'PENDAPATAN', color: 'text-emerald-600' },
+        'BEBAN': { label: 'BEBAN', color: 'text-amber-600' }
+      };
 
-        // Generate HTML for each account type
-        Object.keys(typeConfig).forEach(type => {
-          const accounts = groupedForDisplay[type] || [];
+      // Group accounts by type for display
+      const groupedForDisplay = {};
+      accountsToShow.forEach(account => {
+        if (!groupedForDisplay[account.type]) {
+          groupedForDisplay[account.type] = [];
+        }
+        groupedForDisplay[account.type].push(account);
+      });
 
-          if (accounts.length === 0) return;
+      // Generate HTML for each account type
+      Object.keys(typeConfig).forEach(type => {
+        const accounts = groupedForDisplay[type] || [];
 
-          const config = typeConfig[type];
+        if (accounts.length === 0) return;
 
-          // Add type header
-          html += `
+        const config = typeConfig[type];
+
+        // Add type header
+        html += `
             <div class="px-3 py-2 text-xs font-semibold ${config.color} bg-gray-50 rounded-md mt-2 mb-1">
               ${config.label} (${accounts.length})
             </div>
           `;
 
-          // Add accounts for this type
-          accounts.forEach(account => {
-            html += `
+        // Add accounts for this type
+        accounts.forEach(account => {
+          html += `
               <button onclick="selectDefaultAccountFromAPI('${account.name}', '${account.code}', '${account.account_type}', '${account.description}')"
                 class="w-full text-left px-3 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors group border border-transparent hover:border-gray-200">
                 <div class="flex items-center justify-between">
@@ -745,82 +787,82 @@
                 </div>
               </button>
             `;
-          });
         });
+      });
 
-        dynamicList.innerHTML = html;
-        console.log('✅ [DROPDOWN] Account display updated successfully');
-      }
+      dynamicList.innerHTML = html;
+      console.log('✅ [DROPDOWN] Account display updated successfully');
+    }
 
-      function initializeAccountSearch() {
-        const searchInput = document.getElementById('accountSearchInput');
-        const clearBtn = document.getElementById('clearSearchBtn');
+    function initializeAccountSearch() {
+      const searchInput = document.getElementById('accountSearchInput');
+      const clearBtn = document.getElementById('clearSearchBtn');
 
-        if (!searchInput) return;
+      if (!searchInput) return;
 
-        // Search input handler
-        searchInput.addEventListener('input', function () {
-          const searchTerm = this.value.toLowerCase().trim();
+      // Search input handler
+      searchInput.addEventListener('input', function () {
+        const searchTerm = this.value.toLowerCase().trim();
 
-          // Show/hide clear button
-          if (clearBtn) {
-            if (searchTerm) {
-              clearBtn.classList.remove('hidden');
-            } else {
-              clearBtn.classList.add('hidden');
-            }
-          }
-
-          // Filter accounts
-          if (!window.allDefaultAccounts) return;
-
-          const filteredAccounts = window.allDefaultAccounts.filter(account => {
-            return account.name.toLowerCase().includes(searchTerm) ||
-              account.description.toLowerCase().includes(searchTerm) ||
-              account.code.toLowerCase().includes(searchTerm);
-          });
-
-          console.log(`🔍 [SEARCH] "${searchTerm}" found ${filteredAccounts.length} results`);
-          updateAccountDisplay(filteredAccounts);
-        });
-
-        // Clear button handler
+        // Show/hide clear button
         if (clearBtn) {
-          clearBtn.addEventListener('click', function () {
-            searchInput.value = '';
-            this.classList.add('hidden');
-            updateAccountDisplay(window.allDefaultAccounts || []);
-            searchInput.focus();
-          });
+          if (searchTerm) {
+            clearBtn.classList.remove('hidden');
+          } else {
+            clearBtn.classList.add('hidden');
+          }
         }
 
-        // Focus search input when dropdown opens
-        const addAccountBtn = document.getElementById('addAccountBtn');
-        if (addAccountBtn) {
-          addAccountBtn.addEventListener('click', function () {
-            setTimeout(() => {
-              if (!document.getElementById('accountDropdown').classList.contains('hidden')) {
-                searchInput.focus();
-              }
-            }, 100);
-          });
-        }
+        // Filter accounts
+        if (!window.allDefaultAccounts) return;
+
+        const filteredAccounts = window.allDefaultAccounts.filter(account => {
+          return account.name.toLowerCase().includes(searchTerm) ||
+            account.description.toLowerCase().includes(searchTerm) ||
+            account.code.toLowerCase().includes(searchTerm);
+        });
+
+        console.log(`🔍 [SEARCH] "${searchTerm}" found ${filteredAccounts.length} results`);
+        updateAccountDisplay(filteredAccounts);
+      });
+
+      // Clear button handler
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+          searchInput.value = '';
+          this.classList.add('hidden');
+          updateAccountDisplay(window.allDefaultAccounts || []);
+          searchInput.focus();
+        });
       }
 
-      // New function to handle default account selection from API
-      function selectDefaultAccountFromAPI(accountName, accountCode, accountType, accountDescription) {
-        console.log('🎯 [SELECT] Default account selected:', accountName, accountCode, accountType);
+      // Focus search input when dropdown opens
+      const addAccountBtn = document.getElementById('addAccountBtn');
+      if (addAccountBtn) {
+        addAccountBtn.addEventListener('click', function () {
+          setTimeout(() => {
+            if (!document.getElementById('accountDropdown').classList.contains('hidden')) {
+              searchInput.focus();
+            }
+          }, 100);
+        });
+      }
+    }
 
-        selectedDefaultAccount = accountName;
-        selectedDefaultAccountData = {
-          name: accountName,
-          code: accountCode,
-          account_type: accountType,
-          description: accountDescription
-        };
+    // New function to handle default account selection from API
+    function selectDefaultAccountFromAPI(accountName, accountCode, accountType, accountDescription) {
+      console.log('🎯 [SELECT] Default account selected:', accountName, accountCode, accountType);
 
-        // Update modal display
-        document.getElementById('selectedDefaultAccountName').innerHTML = `
+      selectedDefaultAccount = accountName;
+      selectedDefaultAccountData = {
+        name: accountName,
+        code: accountCode,
+        account_type: accountType,
+        description: accountDescription
+      };
+
+      // Update modal display
+      document.getElementById('selectedDefaultAccountName').innerHTML = `
           <div class="flex items-center justify-between">
             <div>
               <div class="font-medium">${accountName}</div>
@@ -830,57 +872,57 @@
           </div>
         `;
 
-        // Close dropdown with search reset and show modal
-        closeAccountDropdown();
-        document.getElementById('defaultAccountModal').classList.remove('hidden');
+      // Close dropdown with search reset and show modal
+      closeAccountDropdown();
+      document.getElementById('defaultAccountModal').classList.remove('hidden');
 
-        // Show balance input for all accounts
-        const kasInput = document.getElementById('defaultKasBalanceInput');
-        kasInput.classList.remove('hidden');
-        document.getElementById('defaultAccountBalance').focus();
-      }
-      async function loadAccounts() {
-        try {
-          // Check if API is available
-          if (!window.KeuTrackAPI) {
-            console.error('❌ [AKUN PAGE] KeuTrackAPI not available');
-            showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
-            return;
-          }
-
-          accounts = await window.KeuTrackAPI.getAccounts();
-          console.log('✅ [AKUN PAGE] Accounts loaded:', accounts.length, 'accounts');
-
-          // Debug: Log account structure
-          if (accounts.length > 0) {
-            console.log('🔍 [DEBUG] Sample account structure:', accounts[0]);
-            console.log('🔍 [DEBUG] Account IDs:', accounts.map(a => ({ id: a.id, name: a.name, type: typeof a.id })));
-          }
-
-          displayAccounts();
-        } catch (error) {
-          console.error('Error loading accounts:', error);
-          showToast('Gagal memuat data akun: ' + error.message, 'error');
-        }
-      }
-
-      function displayAccounts() {
-        const tableBody = document.getElementById('accountsTableBody');
-        if (!tableBody) {
-          console.error('❌ [DISPLAY] Table body element not found');
+      // Show balance input for all accounts
+      const kasInput = document.getElementById('defaultKasBalanceInput');
+      kasInput.classList.remove('hidden');
+      document.getElementById('defaultAccountBalance').focus();
+    }
+    async function loadAccounts() {
+      try {
+        // Check if API is available
+        if (!window.KeuTrackAPI) {
+          console.error('❌ [AKUN PAGE] KeuTrackAPI not available');
+          showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
           return;
         }
 
-        if (accounts.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada akun</td></tr>';
-          return;
+        accounts = await window.KeuTrackAPI.getAccounts();
+        console.log('✅ [AKUN PAGE] Accounts loaded:', accounts.length, 'accounts');
+
+        // Debug: Log account structure
+        if (accounts.length > 0) {
+          console.log('🔍 [DEBUG] Sample account structure:', accounts[0]);
+          console.log('🔍 [DEBUG] Account IDs:', accounts.map(a => ({ id: a.id, name: a.name, type: typeof a.id })));
         }
 
-        console.log('🔨 [DISPLAY] Generating table for', accounts.length, 'accounts');
+        displayAccounts();
+      } catch (error) {
+        console.error('Error loading accounts:', error);
+        showToast('Gagal memuat data akun: ' + error.message, 'error');
+      }
+    }
 
-        const tableHTML = accounts.map(account => {
-          console.log('🔨 [ROW] Creating row for account:', account.id, '-', account.name);
-          return `
+    function displayAccounts() {
+      const tableBody = document.getElementById('accountsTableBody');
+      if (!tableBody) {
+        console.error('❌ [DISPLAY] Table body element not found');
+        return;
+      }
+
+      if (accounts.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada akun</td></tr>';
+        return;
+      }
+
+      console.log('🔨 [DISPLAY] Generating table for', accounts.length, 'accounts');
+
+      const tableHTML = accounts.map(account => {
+        console.log('🔨 [ROW] Creating row for account:', account.id, '-', account.name);
+        return `
         <tr class="hover:bg-gray-50 transition-colors">
           <td class="px-4 py-3 text-sm font-mono text-gray-900">${account.code || '-'}</td>
           <td class="px-4 py-3 text-sm font-medium text-gray-900">${account.name}</td>
@@ -898,433 +940,433 @@
             </div>
           </td>
         </tr>`;
-        }).join('');
+      }).join('');
 
-        tableBody.innerHTML = tableHTML;
-        console.log('✅ [DISPLAY] Table updated successfully');
-      }
+      tableBody.innerHTML = tableHTML;
+      console.log('✅ [DISPLAY] Table updated successfully');
+    }
 
-      function closeDefaultAccountModal() {
-        document.getElementById('defaultAccountModal').classList.add('hidden');
-        selectedDefaultAccount = '';
-        selectedDefaultAccountData = null;
-        document.getElementById('defaultAccountForm').reset();
-      }
+    function closeDefaultAccountModal() {
+      document.getElementById('defaultAccountModal').classList.add('hidden');
+      selectedDefaultAccount = '';
+      selectedDefaultAccountData = null;
+      document.getElementById('defaultAccountForm').reset();
+    }
 
-      async function addAccount(accountData) {
-        try {
-          // Check if API is available
-          if (!window.KeuTrackAPI) {
-            showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
-            return;
-          }
-
-          const newAccount = {
-            name: accountData.name,
-            balance: accountData.balance || 0,
-            // ✅ PERBAIKAN: Gunakan kode SAK EMKM dari backend, fallback ke generate code
-            code: accountData.code || generateAccountCode(),
-            category: accountData.category || null
-          };
-
-          console.log('🚀 [ADD-ACCOUNT] Creating account with data:', newAccount);
-          console.log('📋 [ADD-ACCOUNT] Using SAK EMKM code:', accountData.code, 'for account:', accountData.name);
-
-          const savedAccount = await window.KeuTrackAPI.createAccount(newAccount);
-          showToast('✅ Akun berhasil ditambahkan', 'success');
-
-          closeDefaultAccountModal();
-          await loadAccounts();
-        } catch (error) {
-          console.error('Error adding account:', error);
-          showToast('❌ Gagal menambahkan akun: ' + error.message, 'error');
-        }
-      }
-
-      function editAccount(accountId) {
-        console.log('🔧 [EDIT] Attempting to edit account ID:', accountId);
-        const account = accounts.find(a => a.id == accountId); // Use loose equality
-        if (!account) {
-          console.error('❌ [EDIT] Account not found for ID:', accountId);
-          showToast('Akun tidak ditemukan', 'error');
-          return;
-        }
-
-        console.log('✅ [EDIT] Account found:', account.name);
-        editingAccountId = accountId;
-        document.getElementById('editAccountName').textContent = account.name;
-        document.getElementById('editAccountModal').classList.remove('hidden');
-
-        // Tampilkan input nominal untuk SEMUA akun - bukan hanya akun tertentu
-        const kasInput = document.getElementById('editKasBalanceInput');
-        kasInput.classList.remove('hidden'); // Selalu tampilkan
-        document.getElementById('editAccountBalance').value = formatNumberGrouping(String(account.balance || 0));
-      }
-
-      function closeEditAccountModal() {
-        document.getElementById('editAccountModal').classList.add('hidden');
-        editingAccountId = null;
-      }
-
-      async function updateAccount() {
-        if (!editingAccountId) {
-          showToast('ID akun tidak valid', 'error');
-          return;
-        }
-
+    async function addAccount(accountData) {
+      try {
         // Check if API is available
         if (!window.KeuTrackAPI) {
           showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
           return;
         }
 
-        const account = accounts.find(a => a.id == editingAccountId); // Use loose equality
-        if (!account) {
-          showToast('Akun tidak ditemukan', 'error');
-          return;
-        }
-
-        try {
-          let updateData = {
-            name: account.name,
-            balance: account.balance,
-            category: account.category
-          };
-
-          // Update saldo untuk SEMUA akun - selalu proses input saldo
-          const balanceInput = document.getElementById('editAccountBalance');
-          if (balanceInput && balanceInput.value.trim() !== '') {
-            const newBalance = parseGroupedNumber(balanceInput.value);
-            if (!isNaN(newBalance) && newBalance >= 0) {
-              updateData.balance = newBalance;
-            }
-          }
-
-          console.log('🚀 [UPDATE] Updating account:', editingAccountId, 'with data:', updateData);
-
-          await window.KeuTrackAPI.updateAccount(editingAccountId, updateData);
-          showToast('✅ Akun berhasil diupdate', 'success');
-          closeEditAccountModal();
-          await loadAccounts();
-        } catch (error) {
-          console.error('Error updating account:', error);
-          showToast('❌ Gagal mengupdate akun: ' + error.message, 'error');
-        }
-      }
-
-      function deleteAccount(accountId) {
-        console.log('🗑️ [DELETE] Attempting to delete account ID:', accountId);
-        const account = accounts.find(a => a.id == accountId); // Use loose equality
-        if (!account) {
-          console.error('❌ [DELETE] Account not found for ID:', accountId);
-          showToast('Akun tidak ditemukan', 'error');
-          return;
-        }
-
-        console.log('✅ [DELETE] Account found:', account.name);
-        deletingAccountId = accountId;
-        document.getElementById('deleteConfirmMessage').textContent = `Apakah Anda yakin ingin menghapus akun "${account.name}"?`;
-        document.getElementById('deleteConfirmModal').classList.remove('hidden');
-      }
-
-      function closeDeleteConfirmModal() {
-        document.getElementById('deleteConfirmModal').classList.add('hidden');
-        deletingAccountId = null;
-      }
-
-      async function confirmDeleteAccount() {
-        if (!deletingAccountId) {
-          showToast('ID akun tidak valid', 'error');
-          return;
-        }
-
-        // Check if API is available
-        if (!window.KeuTrackAPI) {
-          showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
-          return;
-        }
-
-        try {
-          console.log('🚀 [DELETE] Deleting account ID:', deletingAccountId);
-          await window.KeuTrackAPI.deleteAccount(deletingAccountId);
-          showToast('✅ Akun berhasil dihapus', 'success');
-          closeDeleteConfirmModal();
-          await loadAccounts();
-        } catch (error) {
-          console.error('Error deleting account:', error);
-          showToast('❌ Gagal menghapus akun: ' + error.message, 'error');
-        }
-      }
-
-      function closeDeleteAllAccountsModal() {
-        document.getElementById('deleteAllAccountsModal').classList.add('hidden');
-      }
-
-      async function confirmDeleteAllAccounts() {
-        try {
-          // Check if API is available
-          if (!window.KeuTrackAPI) {
-            showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
-            return;
-          }
-
-          // Delete all accounts individually via API
-          for (const account of accounts) {
-            await window.KeuTrackAPI.deleteAccount(account.id);
-          }
-          showToast('✅ Semua akun berhasil dihapus', 'success');
-          closeDeleteAllAccountsModal();
-          await loadAccounts();
-        } catch (error) {
-          console.error('Error deleting all accounts:', error);
-          showToast('❌ Gagal menghapus semua akun: ' + error.message, 'error');
-        }
-      }
-
-      function closeLogoutConfirmModal() {
-        document.getElementById('logoutConfirmModal').classList.add('hidden');
-      }
-
-      function confirmLogout() {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('userPreferences');
-        showToast('Berhasil keluar', 'info');
-        setTimeout(() => {
-          window.location.href = 'login.html';
-        }, 1000);
-      }
-
-      // Event Listeners
-      document.addEventListener('DOMContentLoaded', function () {
-        console.log('🚀 [AKUN PAGE] Page loading...');
-        console.log('🌐 [AKUN PAGE] Expected API URL: http://localhost:2001/api');
-
-        // Function to wait for API to be fully loaded
-        async function waitForAPI(maxAttempts = 10, interval = 200) {
-          for (let i = 0; i < maxAttempts; i++) {
-            if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getDefaultAccounts === 'function') {
-              console.log(`✅ [AKUN PAGE] API loaded successfully on attempt ${i + 1}`);
-              return true;
-            }
-            console.log(`⏳ [AKUN PAGE] Waiting for API... attempt ${i + 1}/${maxAttempts}`);
-            await new Promise(resolve => setTimeout(resolve, interval));
-          }
-          console.error('❌ [AKUN PAGE] API failed to load after maximum attempts');
-          return false;
-        }
-
-        // Wait for API then load data
-        waitForAPI().then(apiLoaded => {
-          if (apiLoaded) {
-            loadAccounts();
-            loadDefaultAccounts();
-          } else {
-            console.error('❌ [AKUN PAGE] Cannot load accounts - API not available');
-            // Still try to load accounts (might work with basic functionality)
-            loadAccounts();
-          }
-        });
-
-        // Juga panggil saat mobile menu button diklik (jika ada)
-        const mobileMenuButton = document.getElementById('mobileMenuButton');
-        if (mobileMenuButton) {
-          mobileMenuButton.addEventListener('click', setActiveMenu);
-        }
-      });
-
-      // Default account form
-      document.getElementById('defaultAccountForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        let balance = 0;
-
-        // Ambil nilai dari input saldo awal (opsional)
-        const balanceInput = document.getElementById('defaultAccountBalance').value;
-        if (balanceInput && balanceInput.trim() !== '') {
-          balance = parseGroupedNumber(balanceInput);
-          if (isNaN(balance)) {
-            balance = 0; // Jika parsing gagal, set ke 0
-          }
-        }
-
-        const formData = {
-          name: selectedDefaultAccountData ? selectedDefaultAccountData.name : selectedDefaultAccount,
-          balance: balance,
-          code: selectedDefaultAccountData ? selectedDefaultAccountData.code : null,
-          category: selectedDefaultAccountData ? selectedDefaultAccountData.account_type : null
+        const newAccount = {
+          name: accountData.name,
+          balance: accountData.balance || 0,
+          // ✅ PERBAIKAN: Gunakan kode SAK EMKM dari backend, fallback ke generate code
+          code: accountData.code || generateAccountCode(),
+          category: accountData.category || null
         };
 
-        addAccount(formData);
-      });
+        console.log('🚀 [ADD-ACCOUNT] Creating account with data:', newAccount);
+        console.log('📋 [ADD-ACCOUNT] Using SAK EMKM code:', accountData.code, 'for account:', accountData.name);
 
-      // Edit account form - hanya update nama jika diperlukan
-      document.getElementById('editAccountForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
-        await updateAccount();
-      });
+        const savedAccount = await window.KeuTrackAPI.createAccount(newAccount);
+        showToast('✅ Akun berhasil ditambahkan', 'success');
 
-      // Logout button
-      document.getElementById('logoutButton').addEventListener('click', () => {
-        document.getElementById('logoutConfirmModal').classList.remove('hidden');
-      });
+        closeDefaultAccountModal();
+        await loadAccounts();
+      } catch (error) {
+        console.error('Error adding account:', error);
+        showToast('❌ Gagal menambahkan akun: ' + error.message, 'error');
+      }
+    }
 
-      // Hapus semua akun button
-      document.getElementById('deleteAllAccountsBtn').addEventListener('click', () => {
-        if (accounts.length === 0) {
-          showToast('Tidak ada akun untuk dihapus', 'warning');
+    function editAccount(accountId) {
+      console.log('🔧 [EDIT] Attempting to edit account ID:', accountId);
+      const account = accounts.find(a => a.id == accountId); // Use loose equality
+      if (!account) {
+        console.error('❌ [EDIT] Account not found for ID:', accountId);
+        showToast('Akun tidak ditemukan', 'error');
+        return;
+      }
+
+      console.log('✅ [EDIT] Account found:', account.name);
+      editingAccountId = accountId;
+      document.getElementById('editAccountName').textContent = account.name;
+      document.getElementById('editAccountModal').classList.remove('hidden');
+
+      // Tampilkan input nominal untuk SEMUA akun - bukan hanya akun tertentu
+      const kasInput = document.getElementById('editKasBalanceInput');
+      kasInput.classList.remove('hidden'); // Selalu tampilkan
+      document.getElementById('editAccountBalance').value = formatNumberGrouping(String(account.balance || 0));
+    }
+
+    function closeEditAccountModal() {
+      document.getElementById('editAccountModal').classList.add('hidden');
+      editingAccountId = null;
+    }
+
+    async function updateAccount() {
+      if (!editingAccountId) {
+        showToast('ID akun tidak valid', 'error');
+        return;
+      }
+
+      // Check if API is available
+      if (!window.KeuTrackAPI) {
+        showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
+        return;
+      }
+
+      const account = accounts.find(a => a.id == editingAccountId); // Use loose equality
+      if (!account) {
+        showToast('Akun tidak ditemukan', 'error');
+        return;
+      }
+
+      try {
+        let updateData = {
+          name: account.name,
+          balance: account.balance,
+          category: account.category
+        };
+
+        // Update saldo untuk SEMUA akun - selalu proses input saldo
+        const balanceInput = document.getElementById('editAccountBalance');
+        if (balanceInput && balanceInput.value.trim() !== '') {
+          const newBalance = parseGroupedNumber(balanceInput.value);
+          if (!isNaN(newBalance) && newBalance >= 0) {
+            updateData.balance = newBalance;
+          }
+        }
+
+        console.log('🚀 [UPDATE] Updating account:', editingAccountId, 'with data:', updateData);
+
+        await window.KeuTrackAPI.updateAccount(editingAccountId, updateData);
+        showToast('✅ Akun berhasil diupdate', 'success');
+        closeEditAccountModal();
+        await loadAccounts();
+      } catch (error) {
+        console.error('Error updating account:', error);
+        showToast('❌ Gagal mengupdate akun: ' + error.message, 'error');
+      }
+    }
+
+    function deleteAccount(accountId) {
+      console.log('🗑️ [DELETE] Attempting to delete account ID:', accountId);
+      const account = accounts.find(a => a.id == accountId); // Use loose equality
+      if (!account) {
+        console.error('❌ [DELETE] Account not found for ID:', accountId);
+        showToast('Akun tidak ditemukan', 'error');
+        return;
+      }
+
+      console.log('✅ [DELETE] Account found:', account.name);
+      deletingAccountId = accountId;
+      document.getElementById('deleteConfirmMessage').textContent = `Apakah Anda yakin ingin menghapus akun "${account.name}"?`;
+      document.getElementById('deleteConfirmModal').classList.remove('hidden');
+    }
+
+    function closeDeleteConfirmModal() {
+      document.getElementById('deleteConfirmModal').classList.add('hidden');
+      deletingAccountId = null;
+    }
+
+    async function confirmDeleteAccount() {
+      if (!deletingAccountId) {
+        showToast('ID akun tidak valid', 'error');
+        return;
+      }
+
+      // Check if API is available
+      if (!window.KeuTrackAPI) {
+        showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
+        return;
+      }
+
+      try {
+        console.log('🚀 [DELETE] Deleting account ID:', deletingAccountId);
+        await window.KeuTrackAPI.deleteAccount(deletingAccountId);
+        showToast('✅ Akun berhasil dihapus', 'success');
+        closeDeleteConfirmModal();
+        await loadAccounts();
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        showToast('❌ Gagal menghapus akun: ' + error.message, 'error');
+      }
+    }
+
+    function closeDeleteAllAccountsModal() {
+      document.getElementById('deleteAllAccountsModal').classList.add('hidden');
+    }
+
+    async function confirmDeleteAllAccounts() {
+      try {
+        // Check if API is available
+        if (!window.KeuTrackAPI) {
+          showToast('API tidak tersedia. Pastikan backend berjalan di port 2001', 'error');
           return;
         }
-        document.getElementById('deleteAllAccountsModal').classList.remove('hidden');
-      });
 
-      // Formatting realtime untuk input nominal
-      const defaultBal = document.getElementById('defaultAccountBalance');
-      const editBal = document.getElementById('editAccountBalance');
-      [defaultBal, editBal].forEach(inp => {
-        if (!inp) return;
-        inp.addEventListener('input', (e) => {
-          const raw = e.target.value;
-          e.target.value = formatNumberGrouping(raw);
-        });
-        inp.addEventListener('blur', (e) => {
-          e.target.value = formatNumberGrouping(e.target.value);
-        });
-      });
+        // Delete all accounts individually via API
+        for (const account of accounts) {
+          await window.KeuTrackAPI.deleteAccount(account.id);
+        }
+        showToast('✅ Semua akun berhasil dihapus', 'success');
+        closeDeleteAllAccountsModal();
+        await loadAccounts();
+      } catch (error) {
+        console.error('Error deleting all accounts:', error);
+        showToast('❌ Gagal menghapus semua akun: ' + error.message, 'error');
+      }
+    }
 
-      // Function untuk mengatur menu aktif berdasarkan halaman saat ini
-      function setActiveMenu() {
-        // Hapus semua kelas aktif terlebih dahulu
-        document.querySelectorAll('nav a').forEach(link => {
-          link.classList.remove('bg-white/20');
-        });
+    function closeLogoutConfirmModal() {
+      document.getElementById('logoutConfirmModal').classList.add('hidden');
+    }
 
-        // Dapatkan nama halaman saat ini
-        const currentPage = window.location.pathname.split('/').pop();
+    function confirmLogout() {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('userPreferences');
+      showToast('Berhasil keluar', 'info');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 1000);
+    }
 
-        // Temukan link yang sesuai dan tambahkan kelas aktif
-        document.querySelectorAll('nav a').forEach(link => {
-          const href = link.getAttribute('href');
-          if (href === currentPage) {
-            link.classList.add('bg-white/20');
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('🚀 [AKUN PAGE] Page loading...');
+      console.log('🌐 [AKUN PAGE] Expected API URL: http://localhost:2001/api');
+
+      // Function to wait for API to be fully loaded
+      async function waitForAPI(maxAttempts = 10, interval = 200) {
+        for (let i = 0; i < maxAttempts; i++) {
+          if (window.KeuTrackAPI && typeof window.KeuTrackAPI.getDefaultAccounts === 'function') {
+            console.log(`✅ [AKUN PAGE] API loaded successfully on attempt ${i + 1}`);
+            return true;
           }
-        });
+          console.log(`⏳ [AKUN PAGE] Waiting for API... attempt ${i + 1}/${maxAttempts}`);
+          await new Promise(resolve => setTimeout(resolve, interval));
+        }
+        console.error('❌ [AKUN PAGE] API failed to load after maximum attempts');
+        return false;
       }
 
-      // Panggil function saat halaman dimuat
-      document.addEventListener('DOMContentLoaded', function () {
-        setActiveMenu();
-
-        // Juga panggil saat mobile menu button diklik (jika ada)
-        const mobileMenuButton = document.getElementById('mobileMenuButton');
-        if (mobileMenuButton) {
-          mobileMenuButton.addEventListener('click', setActiveMenu);
+      // Wait for API then load data
+      waitForAPI().then(apiLoaded => {
+        if (apiLoaded) {
+          loadAccounts();
+          loadDefaultAccounts();
+        } else {
+          console.error('❌ [AKUN PAGE] Cannot load accounts - API not available');
+          // Still try to load accounts (might work with basic functionality)
+          loadAccounts();
         }
       });
 
-      // Dropdown functionality for adding accounts
-      const addAccountBtn = document.getElementById('addAccountBtn');
+      // Juga panggil saat mobile menu button diklik (jika ada)
+      const mobileMenuButton = document.getElementById('mobileMenuButton');
+      if (mobileMenuButton) {
+        mobileMenuButton.addEventListener('click', setActiveMenu);
+      }
+    });
+
+    // Default account form
+    document.getElementById('defaultAccountForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      let balance = 0;
+
+      // Ambil nilai dari input saldo awal (opsional)
+      const balanceInput = document.getElementById('defaultAccountBalance').value;
+      if (balanceInput && balanceInput.trim() !== '') {
+        balance = parseGroupedNumber(balanceInput);
+        if (isNaN(balance)) {
+          balance = 0; // Jika parsing gagal, set ke 0
+        }
+      }
+
+      const formData = {
+        name: selectedDefaultAccountData ? selectedDefaultAccountData.name : selectedDefaultAccount,
+        balance: balance,
+        code: selectedDefaultAccountData ? selectedDefaultAccountData.code : null,
+        category: selectedDefaultAccountData ? selectedDefaultAccountData.account_type : null
+      };
+
+      addAccount(formData);
+    });
+
+    // Edit account form - hanya update nama jika diperlukan
+    document.getElementById('editAccountForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      await updateAccount();
+    });
+
+    // Logout button
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      document.getElementById('logoutConfirmModal').classList.remove('hidden');
+    });
+
+    // Hapus semua akun button
+    document.getElementById('deleteAllAccountsBtn').addEventListener('click', () => {
+      if (accounts.length === 0) {
+        showToast('Tidak ada akun untuk dihapus', 'warning');
+        return;
+      }
+      document.getElementById('deleteAllAccountsModal').classList.remove('hidden');
+    });
+
+    // Formatting realtime untuk input nominal
+    const defaultBal = document.getElementById('defaultAccountBalance');
+    const editBal = document.getElementById('editAccountBalance');
+    [defaultBal, editBal].forEach(inp => {
+      if (!inp) return;
+      inp.addEventListener('input', (e) => {
+        const raw = e.target.value;
+        e.target.value = formatNumberGrouping(raw);
+      });
+      inp.addEventListener('blur', (e) => {
+        e.target.value = formatNumberGrouping(e.target.value);
+      });
+    });
+
+    // Function untuk mengatur menu aktif berdasarkan halaman saat ini
+    function setActiveMenu() {
+      // Hapus semua kelas aktif terlebih dahulu
+      document.querySelectorAll('nav a').forEach(link => {
+        link.classList.remove('bg-white/20');
+      });
+
+      // Dapatkan nama halaman saat ini
+      const currentPage = window.location.pathname.split('/').pop();
+
+      // Temukan link yang sesuai dan tambahkan kelas aktif
+      document.querySelectorAll('nav a').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href === currentPage) {
+          link.classList.add('bg-white/20');
+        }
+      });
+    }
+
+    // Panggil function saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', function () {
+      setActiveMenu();
+
+      // Juga panggil saat mobile menu button diklik (jika ada)
+      const mobileMenuButton = document.getElementById('mobileMenuButton');
+      if (mobileMenuButton) {
+        mobileMenuButton.addEventListener('click', setActiveMenu);
+      }
+    });
+
+    // Dropdown functionality for adding accounts
+    const addAccountBtn = document.getElementById('addAccountBtn');
+    const accountDropdown = document.getElementById('accountDropdown');
+
+    if (addAccountBtn && accountDropdown) {
+      // Toggle dropdown when button is clicked
+      addAccountBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const isHidden = accountDropdown.classList.contains('hidden');
+        accountDropdown.classList.toggle('hidden');
+
+        // Focus search input when opening dropdown
+        if (isHidden) {
+          setTimeout(() => {
+            const searchInput = document.getElementById('accountSearchInput');
+            if (searchInput) searchInput.focus();
+          }, 100);
+        }
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function (e) {
+        if (!addAccountBtn.contains(e.target) && !accountDropdown.contains(e.target)) {
+          closeAccountDropdown();
+        }
+      });
+
+      // Prevent dropdown from closing when clicking inside it
+      accountDropdown.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+    }
+
+    // Function to close dropdown and reset search
+    function closeAccountDropdown() {
       const accountDropdown = document.getElementById('accountDropdown');
+      const searchInput = document.getElementById('accountSearchInput');
+      const clearBtn = document.getElementById('clearSearchBtn');
 
-      if (addAccountBtn && accountDropdown) {
-        // Toggle dropdown when button is clicked
-        addAccountBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          const isHidden = accountDropdown.classList.contains('hidden');
-          accountDropdown.classList.toggle('hidden');
-
-          // Focus search input when opening dropdown
-          if (isHidden) {
-            setTimeout(() => {
-              const searchInput = document.getElementById('accountSearchInput');
-              if (searchInput) searchInput.focus();
-            }, 100);
-          }
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function (e) {
-          if (!addAccountBtn.contains(e.target) && !accountDropdown.contains(e.target)) {
-            closeAccountDropdown();
-          }
-        });
-
-        // Prevent dropdown from closing when clicking inside it
-        accountDropdown.addEventListener('click', function (e) {
-          e.stopPropagation();
-        });
+      if (accountDropdown) {
+        accountDropdown.classList.add('hidden');
       }
 
-      // Function to close dropdown and reset search
-      function closeAccountDropdown() {
-        const accountDropdown = document.getElementById('accountDropdown');
-        const searchInput = document.getElementById('accountSearchInput');
-        const clearBtn = document.getElementById('clearSearchBtn');
-
-        if (accountDropdown) {
-          accountDropdown.classList.add('hidden');
-        }
-
-        // Reset search
-        if (searchInput) {
-          searchInput.value = '';
-        }
-        if (clearBtn) {
-          clearBtn.classList.add('hidden');
-        }
-
-        // Show all accounts again
-        if (window.allDefaultAccounts) {
-          updateAccountDisplay(window.allDefaultAccounts);
-        }
+      // Reset search
+      if (searchInput) {
+        searchInput.value = '';
+      }
+      if (clearBtn) {
+        clearBtn.classList.add('hidden');
       }
 
-      // Mobile menu functionality
-      const mobileMenuButton = document.getElementById("mobileMenuButton");
-      const mobileMenu = document.querySelector(".mobile-menu");
-      const mobileOverlay = document.getElementById("mobileOverlay");
-
-      function toggleMobileMenu() {
-        mobileMenu.classList.toggle("active");
-        mobileOverlay.classList.toggle("active");
-        document.body.style.overflow = mobileMenu.classList.contains("active") ? "hidden" : "";
+      // Show all accounts again
+      if (window.allDefaultAccounts) {
+        updateAccountDisplay(window.allDefaultAccounts);
       }
+    }
 
-      function closeMobileMenu() {
-        mobileMenu.classList.remove("active");
-        mobileOverlay.classList.remove("active");
-        document.body.style.overflow = "";
-      }
+    // Mobile menu functionality
+    const mobileMenuButton = document.getElementById("mobileMenuButton");
+    const mobileMenu = document.querySelector(".mobile-menu");
+    const mobileOverlay = document.getElementById("mobileOverlay");
 
-      if (mobileMenuButton && mobileMenu && mobileOverlay) {
-        mobileMenuButton.addEventListener("click", toggleMobileMenu);
-        mobileOverlay.addEventListener("click", closeMobileMenu);
+    function toggleMobileMenu() {
+      mobileMenu.classList.toggle("active");
+      mobileOverlay.classList.toggle("active");
+      document.body.style.overflow = mobileMenu.classList.contains("active") ? "hidden" : "";
+    }
 
-        // Close menu ketika link di klik
-        document.querySelectorAll('.mobile-menu a').forEach(link => {
-          link.addEventListener('click', closeMobileMenu);
-        });
-      }
+    function closeMobileMenu() {
+      mobileMenu.classList.remove("active");
+      mobileOverlay.classList.remove("active");
+      document.body.style.overflow = "";
+    }
 
-      // Expose functions to global scope for onclick attributes
-      window.editAccount = editAccount;
-      window.deleteAccount = deleteAccount;
-      window.selectDefaultAccountFromAPI = selectDefaultAccountFromAPI;
-      window.closeDefaultAccountModal = closeDefaultAccountModal;
-      window.closeEditAccountModal = closeEditAccountModal;
-      window.closeDeleteConfirmModal = closeDeleteConfirmModal;
-      window.confirmDeleteAccount = confirmDeleteAccount;
-      window.closeDeleteAllAccountsModal = closeDeleteAllAccountsModal;
-      window.confirmDeleteAllAccounts = confirmDeleteAllAccounts;
-      window.closeLogoutConfirmModal = closeLogoutConfirmModal;
-      window.confirmLogout = confirmLogout;
-      window.closeToast = closeToast;
+    if (mobileMenuButton && mobileMenu && mobileOverlay) {
+      mobileMenuButton.addEventListener("click", toggleMobileMenu);
+      mobileOverlay.addEventListener("click", closeMobileMenu);
 
-      // Debug: Log exposed functions
-      console.log('🔧 [AKUN PAGE] Functions exposed to global scope:');
-      console.log('  - editAccount:', typeof window.editAccount);
-      console.log('  - deleteAccount:', typeof window.deleteAccount);
-      console.log('  - confirmDeleteAccount:', typeof window.confirmDeleteAccount);
-    </script>
+      // Close menu ketika link di klik
+      document.querySelectorAll('.mobile-menu a').forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
+      });
+    }
+
+    // Expose functions to global scope for onclick attributes
+    window.editAccount = editAccount;
+    window.deleteAccount = deleteAccount;
+    window.selectDefaultAccountFromAPI = selectDefaultAccountFromAPI;
+    window.closeDefaultAccountModal = closeDefaultAccountModal;
+    window.closeEditAccountModal = closeEditAccountModal;
+    window.closeDeleteConfirmModal = closeDeleteConfirmModal;
+    window.confirmDeleteAccount = confirmDeleteAccount;
+    window.closeDeleteAllAccountsModal = closeDeleteAllAccountsModal;
+    window.confirmDeleteAllAccounts = confirmDeleteAllAccounts;
+    window.closeLogoutConfirmModal = closeLogoutConfirmModal;
+    window.confirmLogout = confirmLogout;
+    window.closeToast = closeToast;
+
+    // Debug: Log exposed functions
+    console.log('🔧 [AKUN PAGE] Functions exposed to global scope:');
+    console.log('  - editAccount:', typeof window.editAccount);
+    console.log('  - deleteAccount:', typeof window.deleteAccount);
+    console.log('  - confirmDeleteAccount:', typeof window.confirmDeleteAccount);
+  </script>
 </body>
 
 </html>

@@ -1,238 +1,286 @@
 /**
  * API Client untuk KeuTrack
- * Utility functions untuk komunikasi dengan backend
+ * Utility functions untuk komunikasi dengan backend dengan retry mechanism
  */
 
 const API_BASE_URL = 'https://keutrack-backend-production.up.railway.app/api';
 
 class KeuTrackAPI {
-  
-  /**
-   * Health check untuk memastikan backend tersedia
-   */
-  async healthCheck() {
-    return this.apiCall('/health');
-  }
-
-  /**
-   * Generic fetch wrapper dengan error handling
-   */
-  async apiCall(endpoint, options = {}) {
-    try {
-      const url = `${API_BASE_URL}${endpoint}`;
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
-        ...options
-      };
-
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`API call failed for ${endpoint}:`, error);
-      throw error;
+    constructor() {
+        this.baseUrl = API_BASE_URL;
+        this.timeout = 15000; // 15 seconds timeout
+        this.maxRetries = 3;
+        this.retryDelay = 1000; // 1 second initial delay
+        this.isConnected = false;
+        
+        console.log('🔧 [API.js] Initializing KeuTrackAPI with enhanced connection handling...');
+        console.log('🌐 [API.js] Base URL:', this.baseUrl);
     }
-  }
 
-  // ==================== USERS ====================
-  
-  /**
-   * User login
-   */
-  async login(username, password) {
-    return await this.apiCall('/users/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password })
-    });
-  }
+    /**
+     * 🔄 Generic API call method with retry mechanism
+     */
+    async apiCall(endpoint, options = {}, retries = this.maxRetries) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-  /**
-   * User registration
-   */
-  async register(username, email, password) {
-    return await this.apiCall('/users/register', {
-      method: 'POST',
-      body: JSON.stringify({ username, email, password })
-    });
-  }
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    signal: controller.signal,
+                    ...options
+                };
 
-  // ==================== ACCOUNTS ====================
-  
-  /**
-   * Get all accounts
-   */
-  async getAccounts() {
-    return await this.apiCall('/accounts');
-  }
+                // Remove body if method is GET/HEAD
+                if (['GET', 'HEAD'].includes(config.method?.toUpperCase())) {
+                    delete config.body;
+                }
 
-  /**
-   * Create new account
-   */
-  async createAccount(accountData) {
-    return await this.apiCall('/accounts', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: accountData.name,
-        balance: accountData.balance || 0,
-        code: accountData.code,
-        category: accountData.category
-      })
-    });
-  }
+                console.log(`🌐 [API.js] Attempt ${attempt}/${retries} - ${config.method || 'GET'} ${endpoint}`);
 
-  /**
-   * Alias for createAccount - for compatibility
-   */
-  async addAccount(accountData) {
-    return await this.createAccount(accountData);
-  }
+                const response = await fetch(url, config);
+                clearTimeout(timeoutId);
 
-  /**
-   * Update account
-   */
-  async updateAccount(accountId, accountData) {
-    return await this.apiCall(`/accounts/${accountId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: accountData.name,
-        balance: accountData.balance,
-        category: accountData.category
-      })
-    });
-  }
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorData;
+                    
+                    try {
+                        errorData = JSON.parse(errorText);
+                    } catch {
+                        errorData = { error: errorText || `HTTP ${response.status}` };
+                    }
 
-  /**
-   * Delete account
-   */
-  async deleteAccount(accountId) {
-    return await this.apiCall(`/accounts/${accountId}`, {
-      method: 'DELETE'
-    });
-  }
+                    // Don't retry on client errors (4xx) except 429
+                    if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                        throw new Error(errorData.error || `HTTP ${response.status}: ${errorData.message || 'Client error'}`);
+                    }
 
-  /**
-   * Get default accounts template
-   */
-  async getDefaultAccounts() {
-    return await this.apiCall('/default-accounts');
-  }
+                    // Throw error to trigger retry
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
 
-  // ==================== TRANSACTIONS ====================
-  
-  /**
-   * Get all transactions
-   */
-  async getTransactions() {
-    return await this.apiCall('/transactions');
-  }
+                const data = await response.json();
+                this.isConnected = true;
+                
+                console.log(`✅ [API.js] Success - ${config.method || 'GET'} ${endpoint}`);
+                return data;
 
-  /**
-   * Create new transaction
-   */
-  async createTransaction(transactionData) {
-    return await this.apiCall('/transactions', {
-      method: 'POST',
-      body: JSON.stringify({
-        debit_account_id: transactionData.debit_account_id,
-        credit_account_id: transactionData.credit_account_id,
-        amount: transactionData.amount,
-        description: transactionData.description,
-        transaction_date: transactionData.date
-      })
-    });
-  }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                
+                if (attempt === retries) {
+                    this.isConnected = false;
+                    console.error(`❌ [API.js] Failed after ${retries} attempts - ${endpoint}:`, error.message);
+                    
+                    const enhancedError = new Error(
+                        error.name === 'AbortError' 
+                            ? `Request timeout after ${this.timeout}ms` 
+                            : error.message
+                    );
+                    enhancedError.originalError = error;
+                    enhancedError.endpoint = endpoint;
+                    enhancedError.attempts = attempt;
+                    
+                    throw enhancedError;
+                }
 
-  /**
-   * Alias for createTransaction - for compatibility
-   */
-  async addTransaction(transactionData) {
-    return await this.createTransaction(transactionData);
-  }
+                // Exponential backoff with jitter
+                const delay = this.retryDelay * Math.pow(2, attempt - 1) * (0.5 + Math.random() * 0.5);
+                console.warn(`⚠️ [API.js] Attempt ${attempt} failed. Retrying in ${Math.round(delay)}ms...`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
 
-  /**
-   * Update transaction
-   */
-  async updateTransaction(transactionId, transactionData) {
-    return await this.apiCall(`/transactions/${transactionId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        debit_account_id: transactionData.debit_account_id,
-        credit_account_id: transactionData.credit_account_id,
-        amount: transactionData.amount,
-        description: transactionData.description,
-        transaction_date: transactionData.date
-      })
-    });
-  }
+    /**
+     * 🩺 Health check dengan connection testing
+     */
+    async healthCheck() {
+        try {
+            const result = await this.apiCall('/health', {}, 2); // Fewer retries for health check
+            this.isConnected = true;
+            return result;
+        } catch (error) {
+            this.isConnected = false;
+            throw error;
+        }
+    }
 
-  /**
-   * Delete transaction
-   */
-  async deleteTransaction(transactionId) {
-    return await this.apiCall(`/transactions/${transactionId}`, {
-      method: 'DELETE'
-    });
-  }
+    /**
+     * 🔄 Check connection status dengan timeout pendek
+     */
+    async checkConnection() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const response = await fetch(`${this.baseUrl}/health`, { 
+                signal: controller.signal 
+            });
+            
+            clearTimeout(timeoutId);
+            this.isConnected = response.ok;
+            return this.isConnected;
+        } catch (error) {
+            this.isConnected = false;
+            return false;
+        }
+    }
 
-  // ==================== REPORTS ====================
-  
-  /**
-   * Get general journal entries
-   */
-  async getGeneralJournal() {
-    return await this.apiCall('/reports/general-journal');
-  }
-  
-  /**
-   * Get ledger entries (Buku Besar)
-   */
-  async getLedger() {
-    return await this.apiCall('/reports/ledger');
-  }
-  
-  /**
-   * Get trial balance (Neraca Saldo)
-   */
-  async getTrialBalance() {
-    return await this.apiCall('/reports/trial-balance');
-  }
-  
-  /**
-   * Get income statement
-   */
-  async getIncomeStatement() {
-    return await this.apiCall('/reports/income-statement');
-  }
+    // ==================== USERS ====================
+    async login(username, password) {
+        return await this.apiCall('/users/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+    }
 
-  /**
-   * Get balance sheet
-   */
-  async getBalanceSheet() {
-    return await this.apiCall('/reports/balance-sheet');
-  }
+    async register(username, email, password) {
+        return await this.apiCall('/users/register', {
+            method: 'POST',
+            body: JSON.stringify({ username, email, password })
+        });
+    }
+
+    // ==================== ACCOUNTS ====================
+    async getAccounts() {
+        return await this.apiCall('/accounts');
+    }
+
+    async createAccount(accountData) {
+        return await this.apiCall('/accounts', {
+            method: 'POST',
+            body: JSON.stringify({
+                name: accountData.name,
+                balance: accountData.balance || 0,
+                code: accountData.code,
+                category: accountData.category
+            })
+        });
+    }
+
+    async addAccount(accountData) {
+        return await this.createAccount(accountData);
+    }
+
+    async updateAccount(accountId, accountData) {
+        return await this.apiCall(`/accounts/${accountId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                name: accountData.name,
+                balance: accountData.balance,
+                category: accountData.category
+            })
+        });
+    }
+
+    async deleteAccount(accountId) {
+        return await this.apiCall(`/accounts/${accountId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async getDefaultAccounts() {
+        return await this.apiCall('/default-accounts');
+    }
+
+    // ==================== TRANSACTIONS ====================
+    async getTransactions() {
+        return await this.apiCall('/transactions');
+    }
+
+    async createTransaction(transactionData) {
+        return await this.apiCall('/transactions', {
+            method: 'POST',
+            body: JSON.stringify({
+                debit_account_id: transactionData.debit_account_id,
+                credit_account_id: transactionData.credit_account_id,
+                amount: transactionData.amount,
+                description: transactionData.description,
+                transaction_date: transactionData.date || new Date().toISOString().split('T')[0]
+            })
+        });
+    }
+
+    async addTransaction(transactionData) {
+        return await this.createTransaction(transactionData);
+    }
+
+    async updateTransaction(transactionId, transactionData) {
+        return await this.apiCall(`/transactions/${transactionId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                debit_account_id: transactionData.debit_account_id,
+                credit_account_id: transactionData.credit_account_id,
+                amount: transactionData.amount,
+                description: transactionData.description,
+                transaction_date: transactionData.date
+            })
+        });
+    }
+
+    async deleteTransaction(transactionId) {
+        return await this.apiCall(`/transactions/${transactionId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    // ==================== REPORTS ====================
+    async getGeneralJournal() {
+        return await this.apiCall('/reports/general-journal');
+    }
+    
+    async getLedger() {
+        return await this.apiCall('/reports/ledger');
+    }
+    
+    async getTrialBalance() {
+        return await this.apiCall('/reports/trial-balance');
+    }
+    
+    async getIncomeStatement() {
+        return await this.apiCall('/reports/income-statement');
+    }
+
+    async getBalanceSheet() {
+        return await this.apiCall('/reports/balance-sheet');
+    }
 }
 
-// Export instance
+// Initialize and export
 const api = new KeuTrackAPI();
 
-// Export untuk penggunaan global
+// Global availability
 window.KeuTrackAPI = api;
 
-// Debug logging
-console.log('🔧 [API.js] Loaded successfully - Version 5.1 - General Journal Support [' + new Date().toISOString() + ']');
-console.log('🌐 [API.js] Base URL:', API_BASE_URL);
+// Enhanced debug logging
+console.log('🔧 [API.js] Loaded successfully - Version 6.0 - Enhanced Connection Handling [' + new Date().toISOString() + ']');
+console.log('🌐 [API.js] Base URL:', api.baseUrl);
 console.log('📦 [API.js] KeuTrackAPI instance created:', api);
-const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name => name !== 'constructor');
+
+// Test connection on startup
+setTimeout(async () => {
+    try {
+        const health = await api.healthCheck();
+        console.log('✅ [API.js] Initial health check:', health);
+    } catch (error) {
+        console.warn('⚠️ [API.js] Initial health check failed:', error.message);
+    }
+}, 1000);
+
+// Export methods for verification
+const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name => 
+    name !== 'constructor' && typeof api[name] === 'function'
+);
+
 console.log('🎯 [API.js] Available methods (' + methods.length + '):', methods);
-window.KeuTrackAPI = api;
 console.log('✅ [API.js] window.KeuTrackAPI assigned successfully');
 console.log('✅ [API.js] Verification - window.KeuTrackAPI.getAccounts:', typeof window.KeuTrackAPI.getAccounts);
 console.log('✅ [API.js] Verification - window.KeuTrackAPI.getTransactions:', typeof window.KeuTrackAPI.getTransactions);

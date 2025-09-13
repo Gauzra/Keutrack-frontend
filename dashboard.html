@@ -262,7 +262,8 @@
           </a>
         </li>
         <li>
-          <a href="panduan.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+          <a href="panduan.html"
+            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
             <span class="material-icons">book</span>
             <span>Panduan Penggunaan</span>
           </a>
@@ -405,6 +406,46 @@
   </div>
 
   <script>
+    // ==================== ENHANCED API HANDLER ====================
+    class EnhancedAPI {
+      constructor() {
+        this.maxRetries = 3;
+        this.retryDelay = 1000;
+        this.isConnected = false;
+      }
+
+      async call(apiFunction, ...args) {
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+          try {
+            console.log(`🌐 [ENHANCED] Attempt ${attempt}/${this.maxRetries} - ${apiFunction.name}`);
+
+            if (!window.KeuTrackAPI || typeof window.KeuTrackAPI[apiFunction.name] !== 'function') {
+              throw new Error(`API function ${apiFunction.name} not available`);
+            }
+
+            const result = await window.KeuTrackAPI[apiFunction.name](...args);
+            this.isConnected = true;
+            return result;
+
+          } catch (error) {
+            lastError = error;
+            console.error(`❌ [ENHANCED] Attempt ${attempt} failed:`, error.message);
+
+            if (attempt === this.maxRetries) break;
+            await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
+          }
+        }
+
+        this.isConnected = false;
+        throw lastError;
+      }
+    }
+
+    // Initialize enhanced API
+    window.EnhancedAPI = new EnhancedAPI();
+
     // Fungsi untuk menampilkan toast notification
     function showToast(message, type = 'info') {
       const toastContainer = document.getElementById('toastContainer');
