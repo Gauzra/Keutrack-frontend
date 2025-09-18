@@ -370,28 +370,18 @@
                 console.log('🔹 1. Memulai proses login...');
                 document.getElementById('loadingOverlay').classList.add('active');
 
-                // 1. Simpan token Google
-                console.log('🔹 2. Menyimpan token Google...');
-                localStorage.setItem('authToken', response.credential);
-                console.log('✅ Token disimpan:', response.credential ? 'Ya' : 'Tidak');
-
-                // 2. Kirim token ke backend
-                console.log('🔹 3. Mengirim token ke backend...');
+                // 2. Kirim token ke backend (TANPA SIMPAN LOCALSTORAGE)
+                console.log('🔹 2. Mengirim token ke backend...');
                 const result = await KeuTrackAPI.loginWithGoogle(response.credential);
-                console.log('🔹 4. Response dari backend:', result);
+                console.log('🔹 3. Response dari backend:', result);
 
                 // 3. HANDLE RESPONSE SUKSES
                 if (result.success) {
-                    console.log('✅ 5. Login sukses!');
-                    // Simpan user data dari backend response
-                    localStorage.setItem('currentUser', JSON.stringify(result.user));
-                    console.log('✅ 6. User data disimpan');
-
-                    // REDIRECT KE DASHBOARD
-                    console.log('🔹 7. Redirect ke dashboard...');
-                    window.location.href = 'dashboard.html';
+                    console.log('✅ 4. Login sukses! Redirect...');
+                    // ✅ LANGSUNG REDIRECT - TANPA LOCALSTORAGE
+                    window.location.href = 'https://keutrack.netlify.app/dashboard.html';
                 } else {
-                    console.error('❌ 5. Login gagal:', result.error);
+                    console.error('❌ 4. Login gagal:', result.error);
                     throw new Error(result.error || 'Login gagal di backend');
                 }
 
@@ -399,7 +389,7 @@
                 console.error('❌ ERROR:', error);
                 alert('Login gagal: ' + error.message);
             } finally {
-                console.log('🔹 8. Proses selesai');
+                console.log('🔹 5. Proses selesai');
                 document.getElementById('loadingOverlay').classList.remove('active');
             }
         }
@@ -424,18 +414,8 @@
                 const response = await KeuTrackAPI.login(email, password);
 
                 if (response.success) {
-                    // Simpan data user ke localStorage untuk session management
-                    const userData = {
-                        id: response.user.id,
-                        name: response.user.username,
-                        email: response.user.email,
-                        loginMethod: 'manual'
-                    };
-
-                    localStorage.setItem('currentUser', JSON.stringify(userData));
-
-                    // Redirect ke dashboard
-                    window.location.href = 'dashboard.html';
+                    // ✅ LANGSUNG REDIRECT - TANPA LOCALSTORAGE
+                    window.location.href = 'https://keutrack.netlify.app/dashboard.html';
                 } else {
                     alert('Login gagal: ' + (response.error || 'Username atau password salah'));
                 }
