@@ -132,12 +132,12 @@ class KeuTrackAPI {
 
     // ==================== GOOGLE OAUTH ====================
     async loginWithGoogle(token) {
-        return await this.apiCall('/auth/google', {
+        return await this.apiCall('/auth/google/callback', {
             method: 'POST',
             body: JSON.stringify({ token })
         });
     }
-    
+
     // ==================== USERS ====================
     async login(username, password) {
         return await this.apiCall('/users/login', {
