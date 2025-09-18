@@ -517,47 +517,48 @@
         showToast('❌ Gagal memuat data dashboard', 'error');
       }
     }
-    // async function loadCashData() {
-    //   try {
-    //     // Check if API is available
-    //     if (!window.KeuTrackAPI) {
-    //       console.warn('KeuTrackAPI not available');
-    //       document.querySelector('[data-stat="cash"]').textContent = formatRupiah(0);
-    //       return 0;
-    //     }
+    
+    async function loadCashData() {
+      try {
+        // Check if API is available
+        if (!window.KeuTrackAPI) {
+          console.warn('KeuTrackAPI not available');
+          document.querySelector('[data-stat="cash"]').textContent = formatRupiah(0);
+          return 0;
+        }
 
-    //     const accounts = await window.KeuTrackAPI.getAccounts();
+        const accounts = await window.KeuTrackAPI.getAccounts();
 
-    //     // 1. Cari akun Kas
-    //     const cashAccounts = accounts.filter(account =>
-    //       account.name.toLowerCase().includes('kas') ||
-    //       account.name.toLowerCase().includes('cash') ||
-    //       account.category === 'asset' ||
-    //       account.category === 'Kas'
-    //     );
+        // 1. Cari akun Kas
+        const cashAccounts = accounts.filter(account =>
+          account.name.toLowerCase().includes('kas') ||
+          account.name.toLowerCase().includes('cash') ||
+          account.category === 'asset' ||
+          account.category === 'Kas'
+        );
 
-    //     // 2. Hitung total kas dari semua akun kas
-    //     let totalCash = 0;
-    //     cashAccounts.forEach(account => {
-    //       totalCash += parseFloat(account.balance || 0);
-    //     });
+        // 2. Hitung total kas dari semua akun kas
+        let totalCash = 0;
+        cashAccounts.forEach(account => {
+          totalCash += parseFloat(account.balance || 0);
+        });
 
-    //     // 3. Update tampilan dengan warna yang sesuai
-    //     const cashElement = document.querySelector('[data-stat="cash"]');
-    //     if (cashElement) {
-    //       cashElement.textContent = formatRupiah(totalCash);
-    //       // Ubah warna berdasarkan saldo (hijau untuk positif, merah untuk negatif)
-    //       cashElement.className = `text-xl lg:text-2xl font-semibold ${totalCash >= 0 ? 'text-success' : 'text-danger'}`;
-    //     }
+        // 3. Update tampilan dengan warna yang sesuai
+        const cashElement = document.querySelector('[data-stat="cash"]');
+        if (cashElement) {
+          cashElement.textContent = formatRupiah(totalCash);
+          // Ubah warna berdasarkan saldo (hijau untuk positif, merah untuk negatif)
+          cashElement.className = `text-xl lg:text-2xl font-semibold ${totalCash >= 0 ? 'text-success' : 'text-danger'}`;
+        }
 
-    //     return totalCash;
+        return totalCash;
 
-    //   } catch (error) {
-    //     console.error('Error loading cash data:', error);
-    //     showToast('Gagal memuat data kas', 'error');
-    //     return 0;
-    //   }
-    // }
+      } catch (error) {
+        console.error('Error loading cash data:', error);
+        showToast('Gagal memuat data kas', 'error');
+        return 0;
+      }
+    }
 
     // Baca ringkasan transaksi dari API
     async function loadTransactionSummary() {
