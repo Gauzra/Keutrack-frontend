@@ -366,32 +366,41 @@
                 // Tampilkan loading
                 document.getElementById('loadingOverlay').classList.add('active');
 
-                // Decode JWT token
+                // Simpan token Google untuk authentication backend
+                localStorage.setItem('authToken', response.credential);
+
+                // Decode JWT token untuk debugging (hanya tampil di development)
                 const responsePayload = jwt_decode(response.credential);
 
-                console.log("ID: " + responsePayload.sub);
-                console.log('Full Name: ' + responsePayload.name);
-                console.log('Given Name: ' + responsePayload.given_name);
-                console.log('Family Name: ' + responsePayload.family_name);
-                console.log("Image URL: " + responsePayload.picture);
-                console.log("Email: " + responsePayload.email);
+                // 🔧 DEBUGGING INFO (hanya muncul di localhost)
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log("=== GOOGLE LOGIN DEBUG ===");
+                    console.log("ID:", responsePayload.sub);
+                    console.log('Email:', responsePayload.email);
+                    console.log('Name:', responsePayload.name);
+                    console.log("========================");
+                }
 
-                // Simpan data user ke localStorage untuk session management
-                const userData = {
-                    id: responsePayload.sub,
-                    name: responsePayload.name,
-                    email: responsePayload.email,
-                    picture: responsePayload.picture,
-                    loginMethod: 'google'
-                };
+                // Kirim token ke backend untuk verification dan get user data
+                const result = await KeuTrackAPI.loginWithGoogle(response.credential);
 
-                localStorage.setItem('currentUser', JSON.stringify(userData));
+                if (result.success) {
+                    // Simpan user data dari BACKEND RESPONSE (bukan dari Google langsung)
+                    localStorage.setItem('currentUser', JSON.stringify(result.user));
 
-                // Redirect ke dashboard
-                window.location.href = 'dashboard.html';
+                    // Redirect ke dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    throw new Error(result.error || 'Login gagal di backend');
+                }
+
             } catch (error) {
                 console.error('Error handling Google sign-in:', error);
-                alert('Terjadi kesalahan saat login dengan Google');
+                alert('Terjadi kesalahan saat login dengan Google: ' + error.message);
+
+                // Clean up invalid credentials
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
             } finally {
                 // Sembunyikan loading
                 document.getElementById('loadingOverlay').classList.remove('active');

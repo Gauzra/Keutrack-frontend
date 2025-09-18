@@ -21,15 +21,15 @@ class KeuTrackAPI {
      * 🔄 Generic API call method with retry mechanism
      */
     async apiCall(endpoint, options = {}, retries = this.maxRetries) {
+        const token = localStorage.getItem('authToken'); // ✅ AMBIL TOKEN
         const url = `${this.baseUrl}${endpoint}`;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 const config = {
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : '', // ✅ TAMBAH INI
                         ...options.headers
                     },
                     signal: controller.signal,
@@ -136,7 +136,7 @@ class KeuTrackAPI {
 
     // ==================== GOOGLE OAUTH ====================
     async loginWithGoogle(token) {
-        return await this.apiCall('/auth/google/callback', {
+        return await this.apiCall('/auth/google', {
             method: 'POST',
             body: JSON.stringify({ token })
         });
