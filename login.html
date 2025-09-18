@@ -367,29 +367,39 @@
         // Fungsi untuk menangani response dari Google Sign-In
         async function handleCredentialResponse(response) {
             try {
+                console.log('🔹 1. Memulai proses login...');
                 document.getElementById('loadingOverlay').classList.add('active');
 
                 // 1. Simpan token Google
+                console.log('🔹 2. Menyimpan token Google...');
                 localStorage.setItem('authToken', response.credential);
+                console.log('✅ Token disimpan:', response.credential ? 'Ya' : 'Tidak');
 
                 // 2. Kirim token ke backend
+                console.log('🔹 3. Mengirim token ke backend...');
                 const result = await KeuTrackAPI.loginWithGoogle(response.credential);
+                console.log('🔹 4. Response dari backend:', result);
 
                 // 3. HANDLE RESPONSE SUKSES
                 if (result.success) {
+                    console.log('✅ 5. Login sukses!');
                     // Simpan user data dari backend response
                     localStorage.setItem('currentUser', JSON.stringify(result.user));
+                    console.log('✅ 6. User data disimpan');
 
-                    // REDIRECT KE DASHBOARD  <--- INI YANG PERLU DIPASTIKAN
+                    // REDIRECT KE DASHBOARD
+                    console.log('🔹 7. Redirect ke dashboard...');
                     window.location.href = 'dashboard.html';
                 } else {
+                    console.error('❌ 5. Login gagal:', result.error);
                     throw new Error(result.error || 'Login gagal di backend');
                 }
 
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('❌ ERROR:', error);
                 alert('Login gagal: ' + error.message);
             } finally {
+                console.log('🔹 8. Proses selesai');
                 document.getElementById('loadingOverlay').classList.remove('active');
             }
         }
