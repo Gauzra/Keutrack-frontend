@@ -367,46 +367,29 @@
         // Fungsi untuk menangani response dari Google Sign-In
         async function handleCredentialResponse(response) {
             try {
-                // Tampilkan loading
                 document.getElementById('loadingOverlay').classList.add('active');
 
-                // Simpan token Google untuk authentication backend
+                // 1. Simpan token Google
                 localStorage.setItem('authToken', response.credential);
 
-                // Decode JWT token untuk debugging (hanya tampil di development)
-                const responsePayload = jwt_decode(response.credential);
-
-                // 🔧 DEBUGGING INFO (hanya muncul di localhost)
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    console.log("=== GOOGLE LOGIN DEBUG ===");
-                    console.log("ID:", responsePayload.sub);
-                    console.log('Email:', responsePayload.email);
-                    console.log('Name:', responsePayload.name);
-                    console.log("========================");
-                }
-
-                // Kirim token ke backend untuk verification dan get user data
+                // 2. Kirim token ke backend
                 const result = await KeuTrackAPI.loginWithGoogle(response.credential);
 
+                // 3. HANDLE RESPONSE SUKSES
                 if (result.success) {
-                    // Simpan user data dari BACKEND RESPONSE (bukan dari Google langsung)
+                    // Simpan user data dari backend response
                     localStorage.setItem('currentUser', JSON.stringify(result.user));
 
-                    // Redirect ke dashboard
+                    // REDIRECT KE DASHBOARD  <--- INI YANG PERLU DIPASTIKAN
                     window.location.href = 'dashboard.html';
                 } else {
                     throw new Error(result.error || 'Login gagal di backend');
                 }
 
             } catch (error) {
-                console.error('Error handling Google sign-in:', error);
-                alert('Terjadi kesalahan saat login dengan Google: ' + error.message);
-
-                // Clean up invalid credentials
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('currentUser');
+                console.error('Login error:', error);
+                alert('Login gagal: ' + error.message);
             } finally {
-                // Sembunyikan loading
                 document.getElementById('loadingOverlay').classList.remove('active');
             }
         }
