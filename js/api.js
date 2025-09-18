@@ -24,8 +24,12 @@ class KeuTrackAPI {
         const token = localStorage.getItem('authToken'); // ✅ AMBIL TOKEN
         const url = `${this.baseUrl}${endpoint}`;
 
+        const controller = new AbortController();
+        let timeoutId;
+
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
+                timeoutId = setTimeout(() => controller.abort(), this.timeout);
                 const config = {
                     headers: {
                         'Content-Type': 'application/json',
