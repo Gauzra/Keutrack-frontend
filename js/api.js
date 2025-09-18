@@ -99,20 +99,16 @@ class KeuTrackAPI {
         }
     }
 
-    /**
-     * 🩺 Health check dengan connection testing
-     */
+    // Cari dan perbaiki health check function:
     async healthCheck() {
         try {
-            const result = await this.apiCall('/health', {}, 2); // Fewer retries for health check
-            this.isConnected = true;
-            return result;
+            // ❌ Hapus timeout complex, gunakan fetch sederhana
+            const response = await fetch(`${this.baseUrl}/health`);
+            return await response.json();
         } catch (error) {
-            this.isConnected = false;
-            throw error;
+            throw new Error('Health check failed: ' + error.message);
         }
     }
-
     /**
      * 🔄 Check connection status dengan timeout pendek
      */
@@ -141,7 +137,7 @@ class KeuTrackAPI {
             body: JSON.stringify({ token })
         });
     }
-    
+
     // ==================== USERS ====================
     async login(username, password) {
         return await this.apiCall('/users/login', {
@@ -273,15 +269,15 @@ console.log('🔧 [API.js] Loaded successfully - Version 6.0 - Enhanced Connecti
 console.log('🌐 [API.js] Base URL:', api.baseUrl);
 console.log('📦 [API.js] KeuTrackAPI instance created:', api);
 
-// Test connection on startup
-setTimeout(async () => {
-    try {
-        const health = await api.healthCheck();
-        console.log('✅ [API.js] Initial health check:', health);
-    } catch (error) {
-        console.warn('⚠️ [API.js] Initial health check failed:', error.message);
-    }
-}, 1000);
+// // Test connection on startup
+// setTimeout(async () => {
+//     try {
+//         const health = await api.healthCheck();
+//         console.log('✅ [API.js] Initial health check:', health);
+//     } catch (error) {
+//         console.warn('⚠️ [API.js] Initial health check failed:', error.message);
+//     }
+// }, 1000);
 
 // Export methods for verification
 const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name =>
