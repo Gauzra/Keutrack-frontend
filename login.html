@@ -346,14 +346,10 @@
             <!-- Google Sign-In Button -->
             <div id="g_id_onload"
                 data-client_id="109474537566-johb2fn97km03he16s3cump2k0lf63ht.apps.googleusercontent.com"
-                data-callback="handleCredentialResponse"
-                data-login_uri="https://keutrack-backend-production.up.railway.app/auth/google/callback"
-                data-context="signin" data-ux_mode="redirect" <!-- ✅ GANTI DARI popup KE redirect -->
-                data-auto_prompt="false">
+                data-callback="handleCredentialResponse">
             </div>
-            <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
-                data-text="signin_with" data-size="large" data-logo_alignment="left" data-width="400">
-                <!-- ✅ PASTIKAN NUMBER, BUKAN STRING -->
+            <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with"
+                data-shape="rectangular" data-logo_alignment="left" data-width="100%">
             </div>
         </form>
 
@@ -367,29 +363,37 @@
         // Fungsi untuk menangani response dari Google Sign-In
         async function handleCredentialResponse(response) {
             try {
-                console.log('🔹 1. Memulai proses login...');
+                // Tampilkan loading
                 document.getElementById('loadingOverlay').classList.add('active');
 
-                // 2. Kirim token ke backend (TANPA SIMPAN LOCALSTORAGE)
-                console.log('🔹 2. Mengirim token ke backend...');
-                const result = await KeuTrackAPI.loginWithGoogle(response.credential);
-                console.log('🔹 3. Response dari backend:', result);
+                // Decode JWT token
+                const responsePayload = jwt_decode(response.credential);
 
-                // 3. HANDLE RESPONSE SUKSES
-                if (result.success) {
-                    console.log('✅ 4. Login sukses! Redirect...');
-                    // ✅ LANGSUNG REDIRECT - TANPA LOCALSTORAGE
-                    window.location.href = 'https://keutrack.netlify.app/dashboard.html';
-                } else {
-                    console.error('❌ 4. Login gagal:', result.error);
-                    throw new Error(result.error || 'Login gagal di backend');
-                }
+                console.log("ID: " + responsePayload.sub);
+                console.log('Full Name: ' + responsePayload.name);
+                console.log('Given Name: ' + responsePayload.given_name);
+                console.log('Family Name: ' + responsePayload.family_name);
+                console.log("Image URL: " + responsePayload.picture);
+                console.log("Email: " + responsePayload.email);
 
+                // Simpan data user ke localStorage untuk session management
+                const userData = {
+                    id: responsePayload.sub,
+                    name: responsePayload.name,
+                    email: responsePayload.email,
+                    picture: responsePayload.picture,
+                    loginMethod: 'google'
+                };
+
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                // Redirect ke dashboard
+                window.location.href = 'dashboard.html';
             } catch (error) {
-                console.error('❌ ERROR:', error);
-                alert('Login gagal: ' + error.message);
+                console.error('Error handling Google sign-in:', error);
+                alert('Terjadi kesalahan saat login dengan Google');
             } finally {
-                console.log('🔹 5. Proses selesai');
+                // Sembunyikan loading
                 document.getElementById('loadingOverlay').classList.remove('active');
             }
         }
@@ -414,8 +418,18 @@
                 const response = await KeuTrackAPI.login(email, password);
 
                 if (response.success) {
-                    // ✅ LANGSUNG REDIRECT - TANPA LOCALSTORAGE
-                    window.location.href = 'https://keutrack.netlify.app/dashboard.html';
+                    // Simpan data user ke localStorage untuk session management
+                    const userData = {
+                        id: response.user.id,
+                        name: response.user.username,
+                        email: response.user.email,
+                        loginMethod: 'manual'
+                    };
+
+                    localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                    // Redirect ke dashboard
+                    window.location.href = 'dashboard.html';
                 } else {
                     alert('Login gagal: ' + (response.error || 'Username atau password salah'));
                 }

@@ -12,7 +12,7 @@ class KeuTrackAPI {
         this.maxRetries = 3;
         this.retryDelay = 1000; // 1 second initial delay
         this.isConnected = false;
-
+        
         console.log('🔧 [API.js] Initializing KeuTrackAPI with enhanced connection handling...');
         console.log('🌐 [API.js] Base URL:', this.baseUrl);
     }
@@ -21,19 +21,15 @@ class KeuTrackAPI {
      * 🔄 Generic API call method with retry mechanism
      */
     async apiCall(endpoint, options = {}, retries = this.maxRetries) {
-        const token = localStorage.getItem('authToken'); // ✅ AMBIL TOKEN
         const url = `${this.baseUrl}${endpoint}`;
-
         const controller = new AbortController();
-        let timeoutId;
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
-                timeoutId = setTimeout(() => controller.abort(), this.timeout);
                 const config = {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': token ? `Bearer ${token}` : '', // ✅ TAMBAH INI
                         ...options.headers
                     },
                     signal: controller.signal,
@@ -53,7 +49,7 @@ class KeuTrackAPI {
                 if (!response.ok) {
                     const errorText = await response.text();
                     let errorData;
-
+                    
                     try {
                         errorData = JSON.parse(errorText);
                     } catch {
@@ -71,48 +67,52 @@ class KeuTrackAPI {
 
                 const data = await response.json();
                 this.isConnected = true;
-
+                
                 console.log(`✅ [API.js] Success - ${config.method || 'GET'} ${endpoint}`);
                 return data;
 
             } catch (error) {
                 clearTimeout(timeoutId);
-
+                
                 if (attempt === retries) {
                     this.isConnected = false;
                     console.error(`❌ [API.js] Failed after ${retries} attempts - ${endpoint}:`, error.message);
-
+                    
                     const enhancedError = new Error(
-                        error.name === 'AbortError'
-                            ? `Request timeout after ${this.timeout}ms`
+                        error.name === 'AbortError' 
+                            ? `Request timeout after ${this.timeout}ms` 
                             : error.message
                     );
                     enhancedError.originalError = error;
                     enhancedError.endpoint = endpoint;
                     enhancedError.attempts = attempt;
-
+                    
                     throw enhancedError;
                 }
 
                 // Exponential backoff with jitter
                 const delay = this.retryDelay * Math.pow(2, attempt - 1) * (0.5 + Math.random() * 0.5);
                 console.warn(`⚠️ [API.js] Attempt ${attempt} failed. Retrying in ${Math.round(delay)}ms...`);
-
+                
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
     }
 
-    // Cari dan perbaiki health check function:
+    /**
+     * 🩺 Health check dengan connection testing
+     */
     async healthCheck() {
         try {
-            // ❌ Hapus timeout complex, gunakan fetch sederhana
-            const response = await fetch(`${this.baseUrl}/health`);
-            return await response.json();
+            const result = await this.apiCall('/health', {}, 2); // Fewer retries for health check
+            this.isConnected = true;
+            return result;
         } catch (error) {
-            throw new Error('Health check failed: ' + error.message);
+            this.isConnected = false;
+            throw error;
         }
     }
+
     /**
      * 🔄 Check connection status dengan timeout pendek
      */
@@ -120,11 +120,11 @@ class KeuTrackAPI {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-            const response = await fetch(`${this.baseUrl}/health`, {
-                signal: controller.signal
+            
+            const response = await fetch(`${this.baseUrl}/health`, { 
+                signal: controller.signal 
             });
-
+            
             clearTimeout(timeoutId);
             this.isConnected = response.ok;
             return this.isConnected;
@@ -132,14 +132,6 @@ class KeuTrackAPI {
             this.isConnected = false;
             return false;
         }
-    }
-
-    // ==================== GOOGLE OAUTH ====================
-    async loginWithGoogle(token) {
-        return await this.apiCall('/auth/google/callback', {
-            method: 'POST',
-            body: JSON.stringify({ token })
-        });
     }
 
     // ==================== USERS ====================
@@ -244,15 +236,15 @@ class KeuTrackAPI {
     async getGeneralJournal() {
         return await this.apiCall('/reports/general-journal');
     }
-
+    
     async getLedger() {
         return await this.apiCall('/reports/ledger');
     }
-
+    
     async getTrialBalance() {
         return await this.apiCall('/reports/trial-balance');
     }
-
+    
     async getIncomeStatement() {
         return await this.apiCall('/reports/income-statement');
     }
@@ -273,18 +265,18 @@ console.log('🔧 [API.js] Loaded successfully - Version 6.0 - Enhanced Connecti
 console.log('🌐 [API.js] Base URL:', api.baseUrl);
 console.log('📦 [API.js] KeuTrackAPI instance created:', api);
 
-// // Test connection on startup
-// setTimeout(async () => {
-//     try {
-//         const health = await api.healthCheck();
-//         console.log('✅ [API.js] Initial health check:', health);
-//     } catch (error) {
-//         console.warn('⚠️ [API.js] Initial health check failed:', error.message);
-//     }
-// }, 1000);
+// Test connection on startup
+setTimeout(async () => {
+    try {
+        const health = await api.healthCheck();
+        console.log('✅ [API.js] Initial health check:', health);
+    } catch (error) {
+        console.warn('⚠️ [API.js] Initial health check failed:', error.message);
+    }
+}, 1000);
 
 // Export methods for verification
-const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name =>
+const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name => 
     name !== 'constructor' && typeof api[name] === 'function'
 );
 
