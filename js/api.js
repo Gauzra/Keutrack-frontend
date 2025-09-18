@@ -12,7 +12,7 @@ class KeuTrackAPI {
         this.maxRetries = 3;
         this.retryDelay = 1000; // 1 second initial delay
         this.isConnected = false;
-        
+
         console.log('🔧 [API.js] Initializing KeuTrackAPI with enhanced connection handling...');
         console.log('🌐 [API.js] Base URL:', this.baseUrl);
     }
@@ -49,7 +49,7 @@ class KeuTrackAPI {
                 if (!response.ok) {
                     const errorText = await response.text();
                     let errorData;
-                    
+
                     try {
                         errorData = JSON.parse(errorText);
                     } catch {
@@ -67,33 +67,33 @@ class KeuTrackAPI {
 
                 const data = await response.json();
                 this.isConnected = true;
-                
+
                 console.log(`✅ [API.js] Success - ${config.method || 'GET'} ${endpoint}`);
                 return data;
 
             } catch (error) {
                 clearTimeout(timeoutId);
-                
+
                 if (attempt === retries) {
                     this.isConnected = false;
                     console.error(`❌ [API.js] Failed after ${retries} attempts - ${endpoint}:`, error.message);
-                    
+
                     const enhancedError = new Error(
-                        error.name === 'AbortError' 
-                            ? `Request timeout after ${this.timeout}ms` 
+                        error.name === 'AbortError'
+                            ? `Request timeout after ${this.timeout}ms`
                             : error.message
                     );
                     enhancedError.originalError = error;
                     enhancedError.endpoint = endpoint;
                     enhancedError.attempts = attempt;
-                    
+
                     throw enhancedError;
                 }
 
                 // Exponential backoff with jitter
                 const delay = this.retryDelay * Math.pow(2, attempt - 1) * (0.5 + Math.random() * 0.5);
                 console.warn(`⚠️ [API.js] Attempt ${attempt} failed. Retrying in ${Math.round(delay)}ms...`);
-                
+
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
@@ -120,11 +120,11 @@ class KeuTrackAPI {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
-            
-            const response = await fetch(`${this.baseUrl}/health`, { 
-                signal: controller.signal 
+
+            const response = await fetch(`${this.baseUrl}/health`, {
+                signal: controller.signal
             });
-            
+
             clearTimeout(timeoutId);
             this.isConnected = response.ok;
             return this.isConnected;
@@ -134,6 +134,14 @@ class KeuTrackAPI {
         }
     }
 
+    // ==================== GOOGLE OAUTH ====================
+    async loginWithGoogle(token) {
+        return await this.apiCall('/auth/google/callback', {
+            method: 'POST',
+            body: JSON.stringify({ token })
+        });
+    }
+    
     // ==================== USERS ====================
     async login(username, password) {
         return await this.apiCall('/users/login', {
@@ -236,15 +244,15 @@ class KeuTrackAPI {
     async getGeneralJournal() {
         return await this.apiCall('/reports/general-journal');
     }
-    
+
     async getLedger() {
         return await this.apiCall('/reports/ledger');
     }
-    
+
     async getTrialBalance() {
         return await this.apiCall('/reports/trial-balance');
     }
-    
+
     async getIncomeStatement() {
         return await this.apiCall('/reports/income-statement');
     }
@@ -276,7 +284,7 @@ setTimeout(async () => {
 }, 1000);
 
 // Export methods for verification
-const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name => 
+const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(api)).filter(name =>
     name !== 'constructor' && typeof api[name] === 'function'
 );
 
